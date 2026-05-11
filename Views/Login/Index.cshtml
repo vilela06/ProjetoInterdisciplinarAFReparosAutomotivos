@@ -1,0 +1,41 @@
+@{
+    ViewData["Title"] = "Login";
+}
+
+<section class="af-login-screen">
+    <div class="af-login-card">
+        <a href="/Home" class="af-back-link" aria-label="Voltar">
+            <i class="fas fa-arrow-left"></i>
+        </a>
+
+        <img src="~/images/logo-af-reparos.png" alt="AF Reparos Automotivos" class="af-login-logo" />
+
+        <form class="af-login-form" asp-controller="Login" asp-action="Logar" method="post">
+            <div class="af-inline-field">
+                <label for="username">Usuário:</label>
+                <input type="text" id="username" name="username" required>
+            </div>
+
+            <div class="af-inline-field">
+                <label for="senha">Senha:</label>
+                <input type="password" id="senha" name="senha" required>
+            </div>
+
+            <button type="submit" class="af-outline-button af-login-submit">Entrar</button>
+        </form>
+    </div>
+</section>
+
+@if (TempData["Mensagem"] is string jsonMessage)
+{
+    var modal = System.Text.Json.JsonSerializer.Deserialize<Modal>(jsonMessage);
+    <partial name="_Modal" model="modal"/>
+    @section Scripts
+    {
+        <script>
+            document.addEventListener('DOMContentLoaded', function () {
+                showGenericModal('@modal?.Id');
+            });
+        </script>
+    }
+}

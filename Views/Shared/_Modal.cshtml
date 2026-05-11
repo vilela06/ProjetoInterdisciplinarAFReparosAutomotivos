@@ -1,0 +1,18 @@
+@model AfReparosAutomotivos.Models.ViewModels.Modal;
+
+<div class="modal fade" id="@Model.Id" tabindex="-1" aria-labelledby="(@Model.Id + "Label")" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content rounded shadow-lg border-0">
+      <div class="modal-header bg-danger text-white">
+        <h5 class="modal-title m-l" @Model.Css id="(@Model.Id + "Label")">@Model.Title</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fechar"></button>
+      </div>
+      <div class="modal-body m-auto">
+        <p class="fs-4">@Model.Mensagem</p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-danger" data-bs-dismiss="modal">Fechar</button>
+      </div>
+    </div>
+  </div>
+</div>

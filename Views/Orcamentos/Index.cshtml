@@ -1,0 +1,147 @@
+@model IEnumerable<AfReparosAutomotivos.Models.OrcamentosViewModel>
+
+@{
+    ViewData["Title"] = "Lista de Orçamentos";
+    var currentNome = Context.Request.Query["nome"].ToString();
+    var currentStatus = Context.Request.Query["statusId"].ToString();
+}
+
+<section class="af-admin-budget-screen">
+    <div class="af-admin-toolbar">
+        <form method="get" asp-action="Index" class="af-admin-filter">
+            <select name="nome" aria-label="Selecione o cliente">
+                <option value="">Selecione o cliente...</option>
+                @foreach (var nome in Model.Select(o => o.nome).Where(n => !string.IsNullOrWhiteSpace(n)).Distinct())
+                {
+                    <option value="@nome" selected="@(currentNome == nome)">@nome</option>
+                }
+            </select>
+            <button type="submit" aria-label="Filtrar cliente">
+                <i class="fas fa-chevron-down"></i>
+            </button>
+        </form>
+
+        <form method="get" asp-action="Index" class="af-admin-search">
+            <input type="text" name="nome" value="@currentNome" placeholder="Pesquisar..." />
+            <button type="submit" aria-label="Pesquisar">
+                <i class="fas fa-search"></i>
+            </button>
+        </form>
+    </div>
+
+    <div class="af-budget-list">
+        @if (Model.Any())
+        {
+            foreach (var item in Model)
+            {
+                var statusClass = item.status switch
+                {
+                    1 => "af-status-green",
+                    2 => "af-status-blue",
+                    _ => "af-status-gray"
+                };
+
+                <div class="af-budget-row">
+                    <span class="af-status-dot @statusClass"></span>
+                    <span>@item.idOrcamento</span>
+                    <span>@item.nome</span>
+                    <span>Descrição............</span>
+                    <span>@item.dataCriacao.ToString("dd-MM-yyyy")</span>
+                    <span>@item.total.ToString("C2")</span>
+
+                    <a asp-action="Details" asp-route-id="@item.idOrcamento" class="af-row-button">
+                        <i class="fas fa-eye"></i> Ver
+                    </a>
+
+                    <a asp-action="GerarPdf" asp-route-id="@item.idOrcamento" class="af-icon-button" title="Imprimir">
+                        <i class="fas fa-print"></i>
+                    </a>
+
+                    <button type="button" class="af-kebab-button" data-action-menu="@item.idOrcamento" aria-label="Mais ações">
+                        <i class="fas fa-ellipsis-v"></i>
+                    </button>
+
+                    <div class="af-action-popover" id="action-menu-@item.idOrcamento">
+                        <a asp-action="Edit" asp-route-id="@item.idOrcamento" class="af-action-choice af-action-edit">
+                            <i class="fas fa-pencil-alt"></i> Alterar
+                        </a>
+                        <button type="button" class="af-action-choice af-action-delete" data-delete-open="@item.idOrcamento">
+                            <i class="fas fa-trash-alt"></i> Excluir
+                        </button>
+                    </div>
+
+                    <div class="af-delete-modal" id="delete-modal-@item.idOrcamento" aria-hidden="true">
+                        <div class="af-delete-card">
+                            <div class="af-delete-message">
+                                <i class="fas fa-trash-alt"></i>
+                                <strong>Deseja excluir<br />esse item?</strong>
+                            </div>
+                            <div class="af-delete-actions">
+                                <form asp-action="Delete" asp-route-id="@item.idOrcamento" method="post">
+                                    <button type="submit">Sim</button>
+                                </form>
+                                <button type="button" data-delete-close="@item.idOrcamento">Não</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+        }
+        else
+        {
+            <div class="af-empty-list">Nenhum orçamento encontrado.</div>
+        }
+    </div>
+
+    <button type="button" class="af-status-help-button" id="statusHelpButton" aria-label="Status">
+        <i class="fas fa-circle"></i>
+    </button>
+
+    <div class="af-status-modal" id="statusHelpModal">
+        <button type="button" class="af-status-close" id="statusHelpClose" aria-label="Fechar">
+            <i class="fas fa-times"></i>
+        </button>
+        <p>Selecione o status...</p>
+        <div><span class="af-status-dot af-status-green"></span> aprovado/aceito pelo cliente</div>
+        <div><span class="af-status-dot af-status-blue"></span> aprovado e sendo executado</div>
+        <div><span class="af-status-dot af-status-gray"></span> não aprovado ainda</div>
+    </div>
+
+    <a asp-action="Create" class="af-floating-add" aria-label="Criar orçamento">
+        <i class="fas fa-plus"></i>
+    </a>
+</section>
+
+@section Scripts {
+    <script>
+        document.querySelectorAll('[data-action-menu]').forEach(button => {
+            button.addEventListener('click', () => {
+                const id = button.getAttribute('data-action-menu');
+                document.querySelectorAll('.af-action-popover').forEach(menu => {
+                    if (menu.id !== `action-menu-${id}`) menu.classList.remove('is-open');
+                });
+                document.getElementById(`action-menu-${id}`)?.classList.toggle('is-open');
+            });
+        });
+
+        document.querySelectorAll('[data-delete-open]').forEach(button => {
+            button.addEventListener('click', () => {
+                document.getElementById(`delete-modal-${button.getAttribute('data-delete-open')}`)?.classList.add('is-open');
+            });
+        });
+
+        document.querySelectorAll('[data-delete-close]').forEach(button => {
+            button.addEventListener('click', () => {
+                document.getElementById(`delete-modal-${button.getAttribute('data-delete-close')}`)?.classList.remove('is-open');
+            });
+        });
+
+        document.getElementById('statusHelpButton')?.addEventListener('click', () => {
+            document.getElementById('statusHelpModal')?.classList.add('is-open');
+        });
+
+        document.getElementById('statusHelpClose')?.addEventListener('click', () => {
+            document.getElementById('statusHelpModal')?.classList.remove('is-open');
+        });
+    </script>
+}

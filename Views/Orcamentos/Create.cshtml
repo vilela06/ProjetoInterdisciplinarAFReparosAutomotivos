@@ -1,0 +1,168 @@
+@model AfReparosAutomotivos.Models.OrcamentosViewModel
+
+@{
+    ViewData["Title"] = "Criar Orçamento";
+
+    if (Model.ServicosAssociados == null || !Model.ServicosAssociados.Any())
+    {
+        Model.ServicosAssociados = new List<AfReparosAutomotivos.Models.ItemViewModel>
+        {
+            new AfReparosAutomotivos.Models.ItemViewModel { qtd = 1 }
+        };
+    }
+}
+
+<form asp-action="Create" method="post" class="af-create-shell" id="orcamentoForm">
+    <input type="hidden" asp-for="idCli" id="idCliente" />
+    <input type="hidden" asp-for="idVeiculo" id="idVeiculo" />
+    <input type="hidden" asp-for="EnderecoCli" id="EnderecoCli" />
+    <input type="hidden" asp-for="dataCriacao" value="@DateTime.Now.ToString("yyyy-MM-ddTHH:mm")" />
+    <input type="hidden" asp-for="status" value="1" />
+    <input type="hidden" asp-for="formaPagamento" value="" />
+    <input type="hidden" asp-for="parcelas" value="1" />
+
+    <a asp-action="Index" class="af-create-close" aria-label="Fechar">
+        <i class="fas fa-times"></i>
+    </a>
+
+    <section class="af-create-panel is-active" id="stepCadastro">
+        <header class="af-create-header">
+            <img src="~/images/logo-af-reparos.png" alt="AF Reparos Automotivos" />
+            <h1>Criar orçamento - Dados cadastrais</h1>
+        </header>
+
+        <div class="af-create-grid af-create-grid-client">
+            <label class="span-3">Nome:<input asp-for="nome" id="nomeCliente" required /></label>
+            <label>Telefone:<input asp-for="TelefoneCli" id="telefoneCliente" placeholder="(XX) XXXXX-XXXX" required /></label>
+            <label>Celular:<input id="celularCliente" placeholder="(XX) XXXXX-XXXX" /></label>
+            <label>Documento:<input asp-for="DocumentoCli" id="documentoCliente" maxlength="14" required /></label>
+
+            <label class="span-3">Rua:<input id="ruaCliente" /></label>
+            <label class="span-2">Bairro:<input id="bairroCliente" /></label>
+            <label>Nº<input id="numeroCliente" /></label>
+            <label class="span-2">Cidade<input id="cidadeCliente" /></label>
+            <label>UF<input id="ufCliente" maxlength="2" /></label>
+        </div>
+
+        <button type="button" class="af-create-next" id="goServico" aria-label="Proxima etapa">
+            <i class="fas fa-arrow-right"></i>
+        </button>
+    </section>
+
+    <section class="af-create-panel" id="stepServico">
+        <header class="af-create-header">
+            <img src="~/images/logo-af-reparos.png" alt="AF Reparos Automotivos" />
+            <h1>Criar orçamento - Ordem de serviço</h1>
+        </header>
+
+        <div class="af-create-grid af-create-grid-service">
+            <label>Placa:<input asp-for="Placa" id="placaVeiculo" maxlength="7" required /></label>
+            <label>Marca:<input asp-for="Marca" id="marcaVeiculo" required /></label>
+            <label>Modelo:<input asp-for="Modelo" id="modeloVeiculo" required /></label>
+            <label>Cor:<input /></label>
+            <label>Ano:<input /></label>
+        </div>
+
+        <div class="af-service-line" id="servicos-container">
+            @for (int j = 0; j < Model.ServicosAssociados.Count; j++)
+            {
+                <div class="af-service-item" data-service-index="@j">
+                    <div class="af-radio-stack">
+                        <label><input type="radio" checked /> Serviço</label>
+                        <label><input type="radio" /> Peça</label>
+                    </div>
+
+                    <label>Quantidade<input asp-for="ServicosAssociados[j].qtd" type="number" min="1" required /></label>
+                    <label class="af-service-description">Descrição
+                        <select asp-for="ServicosAssociados[j].idServico" asp-items="@Model.ServicosDisponiveis" required>
+                            <option value="">Selecione...</option>
+                        </select>
+                    </label>
+                    <label>Valor<input type="text" placeholder="R$XXXX,XX" /></label>
+                    <input type="hidden" asp-for="ServicosAssociados[j].desconto" value="0" />
+                    <input type="hidden" asp-for="ServicosAssociados[j].taxa" value="0" />
+                    <input type="hidden" asp-for="ServicosAssociados[j].observacao" value="" />
+                    <input type="hidden" asp-for="ServicosAssociados[j].data_entrega" />
+                </div>
+            }
+        </div>
+
+        <div class="af-add-service-block">
+            <span>Quais tipos de serviço?</span>
+            <button type="button" id="btnAdicionarServico"><i class="fas fa-plus"></i> Adicionar</button>
+        </div>
+
+        <button type="button" class="af-create-back" id="goCadastro" aria-label="Voltar">
+            <i class="fas fa-arrow-left"></i>
+        </button>
+
+        <div class="af-create-total">
+            <span>Total!</span>
+            <input type="text" value="R$XXXX,XX" readonly />
+        </div>
+
+        <div class="af-create-submit-actions">
+            <button type="submit" name="acao" value="checar">
+                <i class="fas fa-save"></i>
+                <span>Salvar e Checar</span>
+            </button>
+            <button type="submit" name="acao" value="gerar">
+                <i class="fas fa-check"></i>
+                <span>Salvar e Gerar</span>
+            </button>
+        </div>
+    </section>
+</form>
+
+@section Scripts
+{
+    <script>
+        const servicosDisponiveisOptionsData = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.ServicosDisponiveis.Select(s => new { value = s.Value, text = s.Text })));
+        let serviceIndexCounter = @Model.ServicosAssociados.Count;
+
+        function composeEndereco() {
+            const rua = document.getElementById('ruaCliente').value;
+            const bairro = document.getElementById('bairroCliente').value;
+            const numero = document.getElementById('numeroCliente').value;
+            const cidade = document.getElementById('cidadeCliente').value;
+            const uf = document.getElementById('ufCliente').value;
+            document.getElementById('EnderecoCli').value = `${rua}, ${numero}, ${bairro}, ${cidade} - ${uf}`.trim();
+        }
+
+        document.getElementById('goServico').addEventListener('click', () => {
+            composeEndereco();
+            document.getElementById('stepCadastro').classList.remove('is-active');
+            document.getElementById('stepServico').classList.add('is-active');
+        });
+
+        document.getElementById('goCadastro').addEventListener('click', () => {
+            document.getElementById('stepServico').classList.remove('is-active');
+            document.getElementById('stepCadastro').classList.add('is-active');
+        });
+
+        document.getElementById('orcamentoForm').addEventListener('submit', composeEndereco);
+
+        document.getElementById('btnAdicionarServico').addEventListener('click', () => {
+            let optionsHtml = '<option value="">Selecione...</option>';
+            servicosDisponiveisOptionsData.forEach(item => optionsHtml += `<option value="${item.value}">${item.text}</option>`);
+
+            document.getElementById('servicos-container').insertAdjacentHTML('beforeend', `
+                <div class="af-service-item" data-service-index="${serviceIndexCounter}">
+                    <div class="af-radio-stack">
+                        <label><input type="radio" checked /> Serviço</label>
+                        <label><input type="radio" /> Peça</label>
+                    </div>
+                    <label>Quantidade<input name="ServicosAssociados[${serviceIndexCounter}].qtd" type="number" min="1" value="1" required /></label>
+                    <label class="af-service-description">Descrição
+                        <select name="ServicosAssociados[${serviceIndexCounter}].idServico" required>${optionsHtml}</select>
+                    </label>
+                    <label>Valor<input type="text" placeholder="R$XXXX,XX" /></label>
+                    <input type="hidden" name="ServicosAssociados[${serviceIndexCounter}].desconto" value="0" />
+                    <input type="hidden" name="ServicosAssociados[${serviceIndexCounter}].taxa" value="0" />
+                    <input type="hidden" name="ServicosAssociados[${serviceIndexCounter}].observacao" value="" />
+                    <input type="hidden" name="ServicosAssociados[${serviceIndexCounter}].data_entrega" value="" />
+                </div>`);
+            serviceIndexCounter++;
+        });
+    </script>
+}

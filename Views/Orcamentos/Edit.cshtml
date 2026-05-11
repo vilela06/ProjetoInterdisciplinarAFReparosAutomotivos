@@ -1,0 +1,171 @@
+@model AfReparosAutomotivos.Models.OrcamentosViewModel
+
+@{
+    ViewData["Title"] = "Editar Orcamento";
+}
+
+<div class="container mt-5">
+    <div class="card shadow-lg rounded-4 border-0">
+        <div class="card-header text-white text-center rounded-top-4" style="background-color: #3b2e1a">
+            <h3 class="mb-0">Editar Orcamento</h3>
+        </div>
+
+        <div class="card-body p-4">
+            <form asp-action="Edit" method="post">
+                <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+                <input type="hidden" asp-for="idOrcamento" />
+                <input type="hidden" asp-for="idFuncionario" />
+                <input type="hidden" asp-for="idCliente" />
+                <input type="hidden" asp-for="idVeiculo" />
+                <input type="hidden" asp-for="dataCriacao" />
+
+                <fieldset class="border p-3 rounded-3 mb-4">
+                    <legend class="float-none w-auto px-2 fs-6 fw-bold text-muted">Detalhes do Orcamento</legend>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Nome do Funcionario</label>
+                            <input type="text" class="form-control bg-body-tertiary" readonly value="@(Model?.nomeFunc)">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Criacao</label>
+                            <input type="text" class="form-control bg-body-tertiary" readonly value="@(Model?.dataCriacao.ToString("dd/MM/yyyy HH:mm"))">
+                        </div>
+                        <div class="col-md-6">
+                            <label asp-for="dataEntrega" class="form-label fw-semibold">Data de Entrega</label>
+                            <input asp-for="dataEntrega" type="datetime-local" class="form-control" />
+                            <span asp-validation-for="dataEntrega" class="text-danger"></span>
+                        </div>
+                        <div class="col-md-6">
+                            <label asp-for="status" class="form-label fw-semibold">Status</label>
+                            <select asp-for="status" class="form-control">
+                                <option value="1">1 - Em Aberto</option>
+                                <option value="2">2 - Pago</option>
+                                <option value="3">3 - Cancelado</option>
+                            </select>
+                            <span asp-validation-for="status" class="text-danger"></span>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold">Valor</label>
+                            <div class="input-group">
+                                <span class="input-group-text">R$</span>
+                                <input type="text" class="form-control bg-body-tertiary" readonly value="@(Model?.total)">
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <label asp-for="formaPagamento" class="form-label fw-semibold">Forma de Pagamento</label>
+                            <input asp-for="formaPagamento" type="text" class="form-control" />
+                            <span asp-validation-for="formaPagamento" class="text-danger"></span>
+                        </div>
+                        <div class="col-md-4">
+                            <label asp-for="parcelas" class="form-label fw-semibold">Parcelas</label>
+                            <input asp-for="parcelas" type="number" class="form-control" />
+                            <span asp-validation-for="parcelas" class="text-danger"></span>
+                        </div>
+                    </div>
+                </fieldset>
+
+                <fieldset class="border p-3 rounded-3 mb-4">
+                    <legend class="float-none w-auto px-2 fs-6 fw-bold text-muted">Detalhes do Cliente</legend>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Nome</label>
+                            <input type="text" class="form-control bg-body-tertiary" readonly value="@(Model?.nome)">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Documento</label>
+                            <input type="text" class="form-control bg-body-tertiary" readonly value="@(Model?.DocumentoCli)">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Telefone</label>
+                            <input type="text" class="form-control bg-body-tertiary" readonly value="@(Model?.TelefoneCli)">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Endereco</label>
+                            <input type="text" class="form-control bg-body-tertiary" readonly value="@(Model?.EnderecoCli)">
+                        </div>
+                    </div>
+                </fieldset>
+
+                <fieldset class="border p-3 rounded-3 mb-4">
+                    <legend class="float-none w-auto px-2 fs-6 fw-bold text-muted">Veiculo</legend>
+                    <div class="row g-3">
+                        <input type="hidden" asp-for="Placa" />
+                        <input type="hidden" asp-for="Marca" />
+                        <input type="hidden" asp-for="Modelo" />
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold">Placa</label>
+                            <input type="text" class="form-control bg-body-tertiary" readonly value="@(Model?.Placa)">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold">Marca</label>
+                            <input type="text" class="form-control bg-body-tertiary" readonly value="@(Model?.Marca)">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold">Modelo</label>
+                            <input type="text" class="form-control bg-body-tertiary" readonly value="@(Model?.Modelo)">
+                        </div>
+                    </div>
+                </fieldset>
+
+                <fieldset class="border p-3 rounded-3">
+                    <legend class="float-none w-auto px-2 fs-6 fw-bold text-muted">Servicos</legend>
+                    @{
+                        var servicos = Model?.ServicosAssociados ?? new List<AfReparosAutomotivos.Models.ItemViewModel>();
+                    }
+                    @for (int j = 0; j < servicos.Count; j++)
+                    {
+                        var servico = servicos[j];
+                        <fieldset class="border p-3 rounded-3 mb-3">
+                            <legend class="float-none w-auto px-2 fs-6 fw-bold text-muted">Servico @(j + 1)</legend>
+                            <div class="row g-3">
+                                <input type="hidden" asp-for="ServicosAssociados[j].idItem" />
+                                <input type="hidden" asp-for="ServicosAssociados[j].idServico" />
+                                <input type="hidden" asp-for="ServicosAssociados[j].preco" />
+                                <input type="hidden" asp-for="ServicosAssociados[j].descricao" />
+
+                                <div class="col-md-4">
+                                    <label class="form-label fw-semibold">Servico</label>
+                                    <input type="text" class="form-control bg-body-tertiary" readonly value="@(servico.descricao)">
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label fw-semibold">Preco</label>
+                                    <input type="text" class="form-control bg-body-tertiary" readonly value="@(servico.preco)">
+                                </div>
+                                <div class="col-md-4">
+                                    <label asp-for="ServicosAssociados[j].qtd" class="form-label fw-semibold">Quantidade</label>
+                                    <input asp-for="ServicosAssociados[j].qtd" type="number" class="form-control" />
+                                    <span asp-validation-for="ServicosAssociados[j].qtd" class="text-danger"></span>
+                                </div>
+                                <div class="col-md-6">
+                                    <label asp-for="ServicosAssociados[j].taxa" class="form-label fw-semibold">Taxa</label>
+                                    <input asp-for="ServicosAssociados[j].taxa" type="number" step="0.01" class="form-control" />
+                                    <span asp-validation-for="ServicosAssociados[j].taxa" class="text-danger"></span>
+                                </div>
+                                <div class="col-md-6">
+                                    <label asp-for="ServicosAssociados[j].desconto" class="form-label fw-semibold">Desconto</label>
+                                    <input asp-for="ServicosAssociados[j].desconto" type="number" step="0.01" class="form-control" />
+                                    <span asp-validation-for="ServicosAssociados[j].desconto" class="text-danger"></span>
+                                </div>
+                                <div class="col-md-12">
+                                    <label asp-for="ServicosAssociados[j].observacao" class="form-label fw-semibold">Observacao</label>
+                                    <input asp-for="ServicosAssociados[j].observacao" type="text" class="form-control" />
+                                    <span asp-validation-for="ServicosAssociados[j].observacao" class="text-danger"></span>
+                                </div>
+                            </div>
+                        </fieldset>
+                    }
+                </fieldset>
+
+                <div class="d-flex justify-content-end gap-3 mt-4">
+                    <a asp-action="Index" class="btn btn-outline-secondary px-4">
+                        <i class="fas fa-arrow-left"></i> Voltar
+                    </a>
+                    <button type="submit" class="btn-login">
+                        <i class="fas fa-pencil-alt"></i> Editar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,29 @@
+@{
+    ViewData["Title"] = "Pagina Inicial";
+}
+
+<section class="af-home-screen">
+    <div class="af-home-actions">
+        <a asp-controller="Home" asp-action="ClienteOrcamentos">Ver orcamentos</a>
+        <a asp-controller="Login" asp-action="Index" class="af-outline-button">Entrar</a>
+    </div>
+
+    <div class="af-home-content">
+        <div class="af-home-logo-wrap">
+            <img src="~/images/logo-af-reparos.png" alt="AF Reparos Automotivos" class="af-home-logo" />
+        </div>
+
+        <div class="af-home-divider"></div>
+
+        <div class="af-home-text">
+            <h1>‘A SEGURANÇA ESTÁ ALÉM DA LATARIA BONITA’</h1>
+            <p>
+                Desde 2021 realizando reparos automotivos para diversos tipos de automóveis, sempre focando na excelência.
+                <br />
+                Acreditamos que a organização e eficiência sejam chaves para a integridade com nossos clientes.
+                <br />
+                Por isso, agora nossos orçamentos são armazenados e criados por essa plataforma.
+            </p>
+        </div>
+    </div>
+</section>

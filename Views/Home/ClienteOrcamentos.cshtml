@@ -1,0 +1,56 @@
+@model AfReparosAutomotivos.Models.ClienteOrcamentosViewModel
+
+@{
+    ViewData["Title"] = "Visualizar Orcamentos";
+}
+
+<section class="client-budget-page">
+    <div class="client-budget-card">
+        <a asp-controller="Home" asp-action="Index" class="client-back-button" aria-label="Voltar">
+            <i class="fas fa-arrow-left"></i>
+        </a>
+
+        <img src="~/images/logo-af-reparos.png" alt="AF Reparos Automotivos" class="client-budget-logo" />
+
+        <form asp-action="ClienteOrcamentos" method="post" class="client-access-form">
+            <label asp-for="ChaveAcesso">Chave de acesso:</label>
+            <div class="client-access-row">
+                <input asp-for="ChaveAcesso" type="text" placeholder="Codigo unico do cliente" maxlength="19" />
+                <button type="submit" aria-label="Pesquisar orcamentos">
+                    <i class="fas fa-search"></i>
+                </button>
+            </div>
+        </form>
+
+        <div class="client-budget-table-wrap">
+            <table class="client-budget-table">
+                <tbody>
+                    @if (Model.Orcamentos.Any())
+                    {
+                        foreach (var orcamento in Model.Orcamentos)
+                        {
+                            <tr>
+                                <td>@orcamento.idOrcamento</td>
+                                <td>@orcamento.nome</td>
+                                <td>@(!string.IsNullOrWhiteSpace(orcamento.Modelo) ? orcamento.Modelo : "Descricao...")</td>
+                                <td>@(orcamento.dataEntrega?.ToString("dd-MM-yyyy") ?? orcamento.dataCriacao.ToString("dd-MM-yyyy"))</td>
+                            </tr>
+                        }
+                    }
+                    else if (Model.PesquisaRealizada)
+                    {
+                        <tr>
+                            <td colspan="4" class="client-empty-row">Nenhum orcamento encontrado.</td>
+                        </tr>
+                    }
+                    else
+                    {
+                        <tr>
+                            <td colspan="4" class="client-empty-row">Informe sua chave para consultar os orcamentos.</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</section>

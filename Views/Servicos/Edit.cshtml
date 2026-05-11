@@ -1,0 +1,44 @@
+@model AfReparosAutomotivos.Models.Servicos
+
+@{
+    ViewData["Title"] = "Editar Servico";
+}
+
+<div class="container mt-5">
+    <div class="card shadow-lg rounded-4 border-0">
+        <div class="card-header text-white text-center rounded-top-4" style="background-color: #3b2e1a">
+            <h3 class="mb-0">Editar Serviço</h3>
+        </div>
+
+        <div class="card-body p-4">
+            <form asp-action="Edit" method="post">
+                <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+                <input type="hidden" asp-for="IdServico" />
+
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label asp-for="Descricao" class="form-label fw-semibold">Descrição do Serviço</label>
+                        <input asp-for="Descricao" type="text" class="form-control"
+                              value="@(Model.Descricao == "" ? "" : Model.Descricao)" required>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label asp-for="PrecoBase" class="form-label fw-semibold">Preço Base</label>
+                        <input asp-for="PrecoBase" class="form-control" type="number" step="0.01" 
+                            min="0" max="99999999.99" required>
+                        <span asp-validation-for="PrecoBase" class="text-danger"></span>
+                    </div>
+                </div>
+
+                <div class="d-flex justify-content-end gap-3 mt-4">
+                    <a asp-action="Index" class="btn btn-outline-secondary px-4">
+                        <i class="fas fa-arrow-left"></i> Voltar
+                    </a>
+                    <button type="submit" class="btn-login">
+                        <i class="fas fa-pencil-alt"></i> Editar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

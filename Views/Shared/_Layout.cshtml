@@ -1,0 +1,76 @@
+﻿<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - AF Reparos Automotivos</title>
+    <script type="importmap"></script>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/AfReparosAutomotivos.styles.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/Views/Shared/_Layout.cshtml.css" asp-append-version="true" />
+    <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" integrity="sha512-..." crossorigin="anonymous" referrerpolicy="no-referrer" />
+</head>
+<body class="d-flex flex-column min-vh-100">
+    <header class="af-shell-header">
+        <button class="af-menu-button" type="button" aria-label="Menu" id="homebarOpen">
+            <i class="fas fa-bars"></i>
+        </button>
+        <div class="af-homebar-overlay" id="homebarOverlay"></div>
+        <aside class="af-homebar" id="homebar" aria-hidden="true">
+            <button type="button" class="af-homebar-close" id="homebarClose" aria-label="Fechar menu">
+                <i class="fas fa-times"></i>
+            </button>
+            <img src="~/images/logo-af-reparos.png" alt="AF Reparos Automotivos" />
+            <nav>
+                <a asp-controller="Home" asp-action="Index">Página inicial</a>
+                <a asp-controller="Login" asp-action="Index">Entrar como administrador</a>
+                <a asp-controller="Home" asp-action="ClienteOrcamentos">Entrar como cliente</a>
+            </nav>
+        </aside>
+        @if (User.Identity?.IsAuthenticated == true)
+        {
+            <nav class="af-auth-links">
+                <a asp-controller="Orcamentos" asp-action="Index">Orçamentos</a>
+                <a asp-controller="Servicos" asp-action="Index">Serviços</a>
+                <a asp-controller="Clientes" asp-action="Index">Clientes</a>
+                <a asp-controller="Login" asp-action="Logout">Sair</a>
+            </nav>
+        }
+    </header>
+    <div class="container-fluid flex-grow-1">
+        <main role="main" class="pb-3">
+            @RenderBody()
+        </main>
+    </div>
+    
+    <footer class="af-footer border-top py-3 text-muted text-center mt-auto">
+        <div class="container">
+            @@ 2026 AF-Reparos-Automotivos
+        </div>
+    </footer>
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="~/js/site.js" asp-append-version="true"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.js"></script>
+    <script>
+        const homebar = document.getElementById('homebar');
+        const homebarOverlay = document.getElementById('homebarOverlay');
+        const homebarOpen = document.getElementById('homebarOpen');
+        const homebarClose = document.getElementById('homebarClose');
+
+        function setHomebar(open) {
+            homebar?.classList.toggle('is-open', open);
+            homebarOverlay?.classList.toggle('is-open', open);
+            homebar?.setAttribute('aria-hidden', (!open).toString());
+        }
+
+        homebarOpen?.addEventListener('click', () => setHomebar(true));
+        homebarClose?.addEventListener('click', () => setHomebar(false));
+        homebarOverlay?.addEventListener('click', () => setHomebar(false));
+    </script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

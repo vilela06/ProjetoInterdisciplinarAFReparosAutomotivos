@@ -1,0 +1,144 @@
+@model AfReparosAutomotivos.Models.OrcamentosViewModel
+
+@{
+    ViewData["Title"] = "Informacoes do Orcamento";
+    var customHeaderColor = "#3b2e1a";
+}
+
+<div class="container mt-5">
+    <div class="card shadow-lg rounded-4 border-0">
+        <div class="card-header text-white text-center rounded-top-4" style="background-color: @customHeaderColor">
+            <h3 class="mb-0">Detalhes do Orcamento</h3>
+        </div>
+
+        <div class="card-body p-4">
+            <fieldset class="border p-3 rounded-3 mb-4">
+                <legend class="float-none w-auto px-2 fs-6 fw-bold text-muted">Detalhes do Orcamento</legend>
+                <dl class="row g-3">
+                    <dt class="col-sm-4 fw-semibold">@Html.DisplayNameFor(model => model.idOrcamento)</dt>
+                    <dd class="col-sm-8">@Html.DisplayFor(model => model.idOrcamento)</dd>
+
+                    <dt class="col-sm-4 fw-semibold">@Html.DisplayNameFor(model => model.nomeFunc)</dt>
+                    <dd class="col-sm-8">@Html.DisplayFor(model => model.nomeFunc)</dd>
+
+                    <dt class="col-sm-4 fw-semibold">@Html.DisplayNameFor(model => model.dataCriacao)</dt>
+                    <dd class="col-sm-8">@Model.dataCriacao.ToString("dd/MM/yyyy, HH:mm")</dd>
+
+                    <dt class="col-sm-4 fw-semibold">@Html.DisplayNameFor(model => model.dataEntrega)</dt>
+                    <dd class="col-sm-8">@(Model.dataEntrega.HasValue ? Model.dataEntrega.Value.ToString("dd/MM/yyyy") : "Nao definida")</dd>
+
+                    <dt class="col-sm-4 fw-semibold">@Html.DisplayNameFor(model => model.status)</dt>
+                    <dd class="col-sm-8">
+                        @{
+                            var statusText = Model.status switch
+                            {
+                                1 => "Aberto",
+                                2 => "Pago",
+                                3 => "Cancelado",
+                                _ => $"Desconhecido ({Model.status})"
+                            };
+                        }
+                        <span class="fw-bold">@statusText</span>
+                    </dd>
+
+                    <dt class="col-sm-4 fw-semibold">@Html.DisplayNameFor(model => model.total)</dt>
+                    <dd class="col-sm-8 fw-bold">@Model.total.ToString("C2")</dd>
+
+                    <dt class="col-sm-4 fw-semibold">@Html.DisplayNameFor(model => model.formaPagamento)</dt>
+                    <dd class="col-sm-8">@Html.DisplayFor(model => model.formaPagamento)</dd>
+
+                    <dt class="col-sm-4 fw-semibold">@Html.DisplayNameFor(model => model.parcelas)</dt>
+                    <dd class="col-sm-8">@(Model.parcelas > 1 ? Model.parcelas.ToString() + "x" : "A vista")</dd>
+                </dl>
+            </fieldset>
+
+            <fieldset class="border p-3 rounded-3 mb-4">
+                <legend class="float-none w-auto px-2 fs-6 fw-bold text-muted">Detalhes do Cliente</legend>
+                <dl class="row g-3">
+                    <dt class="col-sm-4 fw-semibold">@Html.DisplayNameFor(model => model.nome)</dt>
+                    <dd class="col-sm-8">@Html.DisplayFor(model => model.nome)</dd>
+
+                    <dt class="col-sm-4 fw-semibold">@Html.DisplayNameFor(model => model.DocumentoCli)</dt>
+                    <dd class="col-sm-8">@Html.DisplayFor(model => model.DocumentoCli)</dd>
+
+                    <dt class="col-sm-4 fw-semibold">@Html.DisplayNameFor(model => model.TelefoneCli)</dt>
+                    <dd class="col-sm-8">@Html.DisplayFor(model => model.TelefoneCli)</dd>
+
+                    <dt class="col-sm-4 fw-semibold">@Html.DisplayNameFor(model => model.EnderecoCli)</dt>
+                    <dd class="col-sm-8">@Html.DisplayFor(model => model.EnderecoCli)</dd>
+                </dl>
+            </fieldset>
+
+            <fieldset class="border p-3 rounded-3 mb-4">
+                <legend class="float-none w-auto px-2 fs-6 fw-bold text-muted">Dados do Veiculo</legend>
+                <dl class="row g-3">
+                    <dt class="col-sm-4 fw-semibold">Placa</dt>
+                    <dd class="col-sm-8">@Model.Placa</dd>
+
+                    <dt class="col-sm-4 fw-semibold">Marca</dt>
+                    <dd class="col-sm-8">@Model.Marca</dd>
+
+                    <dt class="col-sm-4 fw-semibold">Modelo</dt>
+                    <dd class="col-sm-8">@Model.Modelo</dd>
+                </dl>
+            </fieldset>
+
+            <fieldset class="border p-3 rounded-3 mb-4">
+                <legend class="float-none w-auto px-2 fs-6 fw-bold text-muted">Dados dos Servicos</legend>
+                @foreach (var servico in Model.ServicosAssociados)
+                {
+                    <fieldset class="border p-3 rounded-3 mb-4">
+                        <dl class="row g-3">
+                            <dt class="col-sm-4 fw-semibold">Servico</dt>
+                            <dd class="col-sm-8">@servico.descricao</dd>
+
+                            <dt class="col-sm-4 fw-semibold">Preco</dt>
+                            <dd class="col-sm-8">@servico.preco</dd>
+
+                            <dt class="col-sm-4 fw-semibold">Quantidade</dt>
+                            <dd class="col-sm-8">@servico.qtd</dd>
+
+                            <dt class="col-sm-4 fw-semibold">Taxa</dt>
+                            <dd class="col-sm-8">@((servico.taxa * 100).ToString())%</dd>
+
+                            <dt class="col-sm-4 fw-semibold">Desconto</dt>
+                            <dd class="col-sm-8">@servico.desconto</dd>
+
+                            <dt class="col-sm-4 fw-semibold">Preco Servico</dt>
+                            <dd class="col-sm-8">
+                                @{
+                                    decimal precoFinal = (servico.preco * servico.qtd) * (1 + servico.taxa) - servico.desconto;
+                                }
+                                <span class="fw-bold">@precoFinal.ToString("C2")</span>
+                            </dd>
+
+                            @if (!string.IsNullOrWhiteSpace(servico.observacao))
+                            {
+                                <dt class="col-sm-4 fw-semibold">Observacao</dt>
+                                <dd class="col-sm-8">@servico.observacao</dd>
+                            }
+                        </dl>
+                    </fieldset>
+                }
+            </fieldset>
+        </div>
+
+        <div class="card-footer bg-light border-0 pt-3 pb-4 d-flex justify-content-end gap-3">
+            <a asp-action="Index" class="btn btn-outline-secondary px-4">
+                <i class="fas fa-arrow-left"></i> Voltar
+            </a>
+
+            <a asp-action="GerarPdf" asp-route-id="@Model.idOrcamento" class="btn btn-danger px-3">
+                <i class="fas fa-file-pdf"></i> Gerar PDF
+            </a>
+
+            <a asp-action="Edit" asp-route-id="@Model.idOrcamento" class="btn-login px-4">
+                <i class="fas fa-pencil-alt"></i> Editar
+            </a>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}
