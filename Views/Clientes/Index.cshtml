@@ -21,6 +21,8 @@
                     <th class="text-left fw-semibold" scope="col">Cliente</th>
                     <th class="text-left fw-semibold" scope="col">Documento</th>
                     <th class="text-left fw-semibold" scope="col">Telefone</th>
+                    <th class="text-left fw-semibold" scope="col">E-mail</th>
+                    <th class="text-left fw-semibold" scope="col">Chave</th>
                     <th class="text-left fw-semibold" scope="col">Endereço</th>
                     <th class="text-left fw-semibold" scope="col">Ações</th>
                 </tr>
@@ -40,6 +42,12 @@
                         </td>
                         <td>
                             @Html.DisplayFor(modelItem => item.telefone)
+                        </td>
+                        <td>
+                            @Html.DisplayFor(modelItem => item.email)
+                        </td>
+                        <td>
+                            @Html.DisplayFor(modelItem => item.chaveCli)
                         </td>
                         <td>
                             @Html.DisplayFor(modelItem => item.endereco)

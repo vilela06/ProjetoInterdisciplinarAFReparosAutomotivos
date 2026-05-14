@@ -20,21 +20,22 @@ namespace AfReparosAutomotivos.Repositories
             return Convert.ToInt32(await command.ExecuteScalarAsync());
         }
 
-        public async Task Delete(int id)
-        {
-            await using var connection = CreateConnection();
-            await connection.OpenAsync();
-            await using var command = new SqlCommand("DELETE FROM Servico WHERE idServico = @id", connection);
-            command.Parameters.AddWithValue("@id", id);
-            await command.ExecuteNonQueryAsync();
-        }
-
         public async Task<IEnumerable<Servicos>> Get()
         {
             var servicos = new List<Servicos>();
             await using var connection = CreateConnection();
             await connection.OpenAsync();
-            await using var command = new SqlCommand("SELECT idServico, descricao, valorBase FROM Servico ORDER BY descricao", connection);
+            await using var command = new SqlCommand(
+                "SELECT s.idServico, s.descricao, s.valorBase, COALESCE(p.nome, 'Sem responsável') AS funcionario, " +
+                "CASE MAX(o.statusOrc) WHEN 1 THEN 'Em aberto' WHEN 2 THEN 'Pago' WHEN 3 THEN 'Cancelado' ELSE 'Catálogo' END AS statusServico " +
+                "FROM Servico s " +
+                "LEFT JOIN Itens i ON i.servicoId = s.idServico " +
+                "LEFT JOIN Funcionario f ON f.idFuncionario = i.funcionarioID " +
+                "LEFT JOIN Pessoa p ON p.idPessoa = f.idFuncionario " +
+                "LEFT JOIN Orcamento o ON o.idOrcamento = i.orcamentoId " +
+                "GROUP BY s.idServico, s.descricao, s.valorBase, p.nome " +
+                "ORDER BY s.descricao",
+                connection);
             await using var reader = await command.ExecuteReaderAsync();
             while (await reader.ReadAsync())
             {
@@ -48,25 +49,12 @@ namespace AfReparosAutomotivos.Repositories
         {
             await using var connection = CreateConnection();
             await connection.OpenAsync();
-            await using var command = new SqlCommand("SELECT idServico, descricao, valorBase FROM Servico WHERE idServico = @id", connection);
+            await using var command = new SqlCommand(
+                "SELECT idServico, descricao, valorBase, 'Sem responsável', 'Catálogo' FROM Servico WHERE idServico = @id",
+                connection);
             command.Parameters.AddWithValue("@id", id);
             await using var reader = await command.ExecuteReaderAsync();
             return await reader.ReadAsync() ? Map(reader) : null;
-        }
-
-        public Task<Servicos?> Update(int id) => GetId(id);
-
-        public async Task Update(Servicos servico)
-        {
-            await using var connection = CreateConnection();
-            await connection.OpenAsync();
-            await using var command = new SqlCommand(
-                "UPDATE Servico SET descricao = @descricao, valorBase = @valorBase WHERE idServico = @id",
-                connection);
-            command.Parameters.AddWithValue("@id", servico.IdServico);
-            command.Parameters.AddWithValue("@descricao", servico.Descricao);
-            command.Parameters.AddWithValue("@valorBase", servico.PrecoBase);
-            await command.ExecuteNonQueryAsync();
         }
 
         public async Task<decimal> GetPrecoBaseByIdAsync(int id)
@@ -79,7 +67,9 @@ namespace AfReparosAutomotivos.Repositories
         {
             IdServico = reader.GetInt32(0),
             Descricao = reader.GetString(1),
-            PrecoBase = reader.GetDecimal(2)
+            PrecoBase = reader.GetDecimal(2),
+            FuncionarioResponsavel = reader.GetString(3),
+            Status = reader.GetString(4)
         };
     }
 }

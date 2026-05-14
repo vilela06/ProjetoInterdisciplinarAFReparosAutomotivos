@@ -208,7 +208,7 @@ namespace AfReparosAutomotivos.Repositories
         private static string BaseSelect() =>
             "SELECT o.idOrcamento, o.clienteId, o.funcionarioId, o.veiculoId, o.data_criacao, o.data_entrega, " +
             "o.statusOrc, o.total, o.forma_pgto, o.parcelas, pc.nome AS nomeCliente, pf.nome AS nomeFuncionario, " +
-            "pc.documento, pc.telefone, COALESCE(e.logradouro + ', ' + e.cidade + ' - ' + e.estado + ', ' + e.CEP, '') AS endereco, " +
+            "pc.documento, COALESCE(c.telefone, pc.celular), COALESCE(e.logradouro + ', ' + e.cidade + ' - ' + e.estado + ', ' + e.CEP, '') AS endereco, " +
             "v.placa, v.marca, v.modelo " +
             "FROM Orcamento o " +
             "INNER JOIN Cliente c ON c.idCliente = o.clienteId " +

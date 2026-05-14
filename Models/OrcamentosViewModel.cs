@@ -82,6 +82,10 @@ namespace AfReparosAutomotivos.Models
         [Display(Name = "Telefone")]
         public string TelefoneCli { get; set; } = string.Empty;
 
+        [Display(Name = "Celular")]
+        [Required(ErrorMessage = "Informe o celular.")]
+        public string CelularCli { get; set; } = string.Empty;
+
         [Display(Name = "Endereco")]
         public string EnderecoCli { get; set; } = string.Empty;
 
@@ -114,5 +118,9 @@ namespace AfReparosAutomotivos.Models
         public List<ItemViewModel> ServicosAssociados { get; set; } = new();
 
         public IEnumerable<SelectListItem> ServicosDisponiveis { get; set; } = new List<SelectListItem>();
+
+        public IEnumerable<SelectListItem> FuncionariosDisponiveis { get; set; } = new List<SelectListItem>();
+
+        public IEnumerable<SelectListItem> PecasDisponiveis { get; set; } = new List<SelectListItem>();
     }
 }

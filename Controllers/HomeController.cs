@@ -1,30 +1,19 @@
 using System.Diagnostics;
-using Microsoft.AspNetCore.Mvc;
-using AfReparosAutomotivos.Models;
 using AfReparosAutomotivos.Interfaces;
+using AfReparosAutomotivos.Models;
+using Microsoft.AspNetCore.Mvc;
 
 namespace AfReparosAutomotivos.Controllers;
 
-/// <summary>
-/// Classe padrão do Framework.
-/// </summary>
 public class HomeController : Controller
 {
-    /// <summary>
-    /// Reserva espaço para armazenar o logger.
-    /// </summary>
-    private readonly ILogger<HomeController> _logger;
     private readonly IOrcamentoRepository _orcamentoRepository;
 
-    /// <summary>
-    /// Atribui o logger ao espaço reservado.
-    /// </summary>
-    public HomeController(ILogger<HomeController> logger, IOrcamentoRepository orcamentoRepository)
+    public HomeController(IOrcamentoRepository orcamentoRepository)
     {
-        _logger = logger;
         _orcamentoRepository = orcamentoRepository;
     }
-  
+
     public IActionResult Index()
     {
         return View();
@@ -33,7 +22,7 @@ public class HomeController : Controller
     [HttpGet]
     public IActionResult ClienteOrcamentos()
     {
-        return View(new ClienteOrcamentosViewModel());
+        return View("~/Views/ClienteOrcamento/Index.cshtml", new ClienteOrcamentosViewModel());
     }
 
     [HttpPost]
@@ -42,12 +31,9 @@ public class HomeController : Controller
     {
         model.PesquisaRealizada = true;
         model.Orcamentos = (await _orcamentoRepository.GetByChaveCliente(model.ChaveAcesso)).ToList();
-        return View(model);
+        return View("~/Views/ClienteOrcamento/Index.cshtml", model);
     }
 
-    /// <summary>
-    /// Armazena em cache por 0 segundos, e em nenhum local, não armazenando nada.
-    /// </summary>
     [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
     public IActionResult Error()
     {

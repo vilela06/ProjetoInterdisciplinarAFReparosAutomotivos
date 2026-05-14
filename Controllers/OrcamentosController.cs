@@ -18,6 +18,8 @@ public class OrcamentosController : Controller
     private readonly IItemRepository _itemRepository;
     private readonly IServicoRepository _servicoRepository;
     private readonly IVeiculoRepository _veiculoRepository;
+    private readonly IFuncionarioRepository _funcionarioRepository;
+    private readonly IPecaRepository _pecaRepository;
     
     /// <summary>
     /// Construtor injetando todos os repositórios necessários.
@@ -28,7 +30,9 @@ public class OrcamentosController : Controller
         IClienteRepository clienteRepository,
         IItemRepository itemRepository,
         IServicoRepository servicoRepository,
-        IVeiculoRepository veiculoRepository
+        IVeiculoRepository veiculoRepository,
+        IFuncionarioRepository funcionarioRepository,
+        IPecaRepository pecaRepository
     )
     {
         QuestPDF.Settings.License = LicenseType.Community;
@@ -38,6 +42,8 @@ public class OrcamentosController : Controller
         _itemRepository = itemRepository;
         _servicoRepository = servicoRepository;
         _veiculoRepository = veiculoRepository;
+        _funcionarioRepository = funcionarioRepository;
+        _pecaRepository = pecaRepository;
     }
 
     /// <summary>
@@ -50,6 +56,20 @@ public class OrcamentosController : Controller
         {
             Value = s.IdServico.ToString(),
             Text = $"{s.Descricao} (R$ {s.PrecoBase:N2})"
+        }).ToList();
+
+        var funcionarios = await _funcionarioRepository.GetAtivos();
+        orcamentoViewModel.FuncionariosDisponiveis = funcionarios.Select(f => new SelectListItem
+        {
+            Value = f.idFuncionario.ToString(),
+            Text = f.Nome
+        }).ToList();
+
+        var pecas = await _pecaRepository.GetDisponiveis();
+        orcamentoViewModel.PecasDisponiveis = pecas.Select(p => new SelectListItem
+        {
+            Value = p.idPeca.ToString(),
+            Text = $"{p.nome} (R$ {p.valor:N2}, estoque {p.qtdEsto})"
         }).ToList();
     }
 
@@ -165,6 +185,7 @@ public class OrcamentosController : Controller
                 {
                     nome = orcamentoViewModel.nome,
                     telefone = orcamentoViewModel.TelefoneCli,
+                    celular = orcamentoViewModel.CelularCli,
                     endereco = orcamentoViewModel.EnderecoCli,
                     documento = orcamentoViewModel.DocumentoCli ?? string.Empty
                 };
@@ -189,16 +210,36 @@ public class OrcamentosController : Controller
             }
 
             var itensDoOrcamento = orcamentoViewModel.ServicosAssociados
-                .Where(item => item != null && item.idServico > 0 && item.qtd > 0)
+                .Where(item => item != null && item.qtd > 0 && item.funcionarioId > 0 &&
+                    (item.idServico > 0 || (!string.IsNullOrWhiteSpace(item.novoServicoDescricao) && item.preco > 0)))
                 .ToList();
                     
             foreach (var item in itensDoOrcamento)
             {
-                var precoBase = await _servicoRepository.GetPrecoBaseByIdAsync(item.idServico); 
+                if (item.idServico <= 0)
+                {
+                    item.idServico = await _servicoRepository.Add(new Servicos
+                    {
+                        Descricao = item.novoServicoDescricao ?? string.Empty,
+                        PrecoBase = item.preco
+                    });
+                }
 
-                item.preco = precoBase;
+                var precoBase = item.idServico <= 0
+                    ? item.preco
+                    : await _servicoRepository.GetPrecoBaseByIdAsync(item.idServico);
 
-                var custoTotal = (item.preco * item.qtd) * (1 + item.taxa);
+                var valorPeca = 0m;
+                if (item.pecaId.HasValue)
+                {
+                    var peca = await _pecaRepository.GetId(item.pecaId.Value);
+                    valorPeca = peca?.valor ?? item.valorPeca;
+                }
+
+                item.valorPeca = valorPeca;
+                item.preco = (precoBase * item.qtd) + (valorPeca * item.qtdPeca);
+
+                var custoTotal = item.preco * (1 + item.taxa);
 
                 var valorItemFinal = custoTotal - item.desconto;
 
@@ -241,7 +282,8 @@ public class OrcamentosController : Controller
                         idOrcamento = idOrcamento, 
                         idVeiculo = idVeiculo,
                         idServico = itemViewModel.idServico,
-                        funcionarioId = idFuncionario,
+                        funcionarioId = itemViewModel.funcionarioId,
+                        pecaId = itemViewModel.pecaId,
                         qtd = itemViewModel.qtd,
                         data_entrega = itemViewModel.data_entrega, 
                         preco = itemViewModel.preco,
@@ -290,6 +332,7 @@ public class OrcamentosController : Controller
             id = cliente.id, 
             nome = cliente.nome, 
             telefone = cliente.telefone, 
+            celular = cliente.celular,
             endereco = cliente.endereco 
         });
     }

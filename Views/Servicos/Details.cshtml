@@ -40,14 +40,6 @@
             <a asp-action="Index" class="btn btn-outline-secondary px-4">
                 <i class="fas fa-arrow-left"></i> Voltar
             </a>
-            
-            <a asp-action="Edit" asp-route-id="@Model.IdServico" class="btn-login px-4">
-                <i class="fas fa-pencil-alt"></i> Editar
-            </a>
         </div>
     </div>
 </div>
-
-@section Scripts {
-    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
-}

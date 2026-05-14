@@ -7,17 +7,30 @@ namespace AfReparosAutomotivos.Models
         public int idItem { get; set; }
 
         [Required]
-        [Display(Name = "Serviço")]
+        [Display(Name = "Servico")]
         public int idServico { get; set; }
-        
+
+        public string? novoServicoDescricao { get; set; }
+
+        [Required]
+        [Display(Name = "Funcionario")]
+        public int funcionarioId { get; set; }
+
         [Required]
         [Display(Name = "Quantidade")]
         [Range(1, int.MaxValue)]
         public int qtd { get; set; }
 
-        public DateTime? data_entrega { get; set; } 
+        public int? pecaId { get; set; }
 
-        [Display(Name = "Preço Base")]
+        [Range(1, int.MaxValue)]
+        public int qtdPeca { get; set; } = 1;
+
+        public decimal valorPeca { get; set; }
+
+        public DateTime? data_entrega { get; set; }
+
+        [Display(Name = "Preco Base")]
         public decimal preco { get; set; }
 
         public string? descricao { get; set; }

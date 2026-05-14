@@ -18,22 +18,67 @@
                 <div class="row g-3">
                     <div class="col-md-6">
                         <label asp-for="nome" class="form-label fw-semibold">Nome</label>
-                        <input asp-for="nome" type="text" class="form-control" value="@(Model?.nome)">
+                        <input asp-for="nome" type="text" class="form-control" value="@(Model?.nome)" required>
+                        <span asp-validation-for="nome" class="text-danger"></span>
                     </div>
 
                     <div class="col-md-6">
                         <label asp-for="documento" class="form-label fw-semibold">CPF/CNPJ</label>
-                        <input asp-for="documento" type="text" class="form-control" value="@(Model?.documento)" maxlength="14" readonly>
+                        <input asp-for="documento" type="text" class="form-control" value="@(Model?.documento)" maxlength="18" readonly>
+                        <span asp-validation-for="documento" class="text-danger"></span>
                     </div>
 
                     <div class="col-md-6">
                         <label asp-for="telefone" class="form-label fw-semibold">Telefone</label>
-                        <input asp-for="telefone" type="text" class="form-control" value="@(Model?.telefone)" maxlength="11">
+                        <input asp-for="telefone" type="text" class="form-control" value="@(Model?.telefone)" maxlength="14">
+                        <span asp-validation-for="telefone" class="text-danger"></span>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label asp-for="celular" class="form-label fw-semibold">Celular <span class="text-danger">*</span></label>
+                        <input asp-for="celular" type="text" class="form-control" value="@(Model?.celular)" maxlength="15" required>
+                        <span asp-validation-for="celular" class="text-danger"></span>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label asp-for="email" class="form-label fw-semibold">E-mail</label>
+                        <input asp-for="email" type="email" class="form-control" value="@(Model?.email)" maxlength="50" required>
+                        <span asp-validation-for="email" class="text-danger"></span>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label asp-for="chaveCli" class="form-label fw-semibold">Chave do cliente</label>
+                        <input asp-for="chaveCli" type="text" class="form-control" value="@(Model?.chaveCli)" readonly>
                     </div>
 
                     <div class="col-md-6">
                         <label asp-for="endereco" class="form-label fw-semibold">Endereço</label>
                         <input asp-for="endereco" type="text" class="form-control" value="@(Model?.endereco)">
+                    </div>
+
+                    <div class="col-md-6">
+                        <label asp-for="logradouro" class="form-label fw-semibold">Rua</label>
+                        <input asp-for="logradouro" type="text" class="form-control" value="@(Model?.logradouro)" maxlength="150">
+                    </div>
+
+                    <div class="col-md-3">
+                        <label asp-for="numero" class="form-label fw-semibold">Número</label>
+                        <input asp-for="numero" type="text" class="form-control" value="@(Model?.numero)" maxlength="5">
+                    </div>
+
+                    <div class="col-md-5">
+                        <label asp-for="cidade" class="form-label fw-semibold">Cidade</label>
+                        <input asp-for="cidade" type="text" class="form-control" value="@(Model?.cidade)" maxlength="100">
+                    </div>
+
+                    <div class="col-md-2">
+                        <label asp-for="estado" class="form-label fw-semibold">UF</label>
+                        <input asp-for="estado" type="text" class="form-control" value="@(Model?.estado)" maxlength="2">
+                    </div>
+
+                    <div class="col-md-4">
+                        <label asp-for="cep" class="form-label fw-semibold">CEP</label>
+                        <input asp-for="cep" type="text" class="form-control" value="@(Model?.cep)" maxlength="9">
                     </div>
                 </div>
 
@@ -49,3 +94,7 @@
         </div>
     </div>
 </div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}

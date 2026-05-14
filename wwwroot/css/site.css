@@ -797,25 +797,54 @@ body {
 
 .af-service-item {
     display: grid;
-    grid-template-columns: 140px 112px 254px 124px;
+    grid-template-columns: 120px 86px 210px 190px 118px;
     align-items: end;
-    gap: 30px;
+    gap: 18px;
 }
 
-.af-radio-stack label {
+.af-service-toggles label {
     display: block;
     font-size: 1.15rem;
 }
 
-.af-radio-stack input {
+.af-service-toggles input {
     display: inline-block;
     width: auto;
     height: auto;
     margin-right: 4px;
 }
 
+.af-toggle {
+    border: 1px solid #d4cec2;
+    padding: 4px 8px;
+    background: #fff;
+}
+
+.af-toggle:has(input:checked),
+.af-toggle.is-locked {
+    background: #3b2e1a;
+    color: #fff;
+}
+
 .af-service-description {
-    min-width: 254px;
+    min-width: 210px;
+}
+
+.af-required {
+    color: #c50012;
+    margin-left: 3px;
+}
+
+.af-piece-row {
+    grid-column: 2 / -1;
+    display: none;
+    grid-template-columns: minmax(240px, 1fr) 120px 130px;
+    gap: 18px;
+    align-items: end;
+}
+
+.af-piece-row.is-open {
+    display: grid;
 }
 
 .af-add-service-block {

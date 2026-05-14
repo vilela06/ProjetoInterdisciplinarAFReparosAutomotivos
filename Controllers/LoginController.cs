@@ -26,13 +26,8 @@ namespace AfReparosAutomotivos.Controllers
         {
             if (User.Identity?.IsAuthenticated == true)
             {
-                return Json(new { message = "Usuário já logado." });
+                return RedirectToAction("Index", "Orcamentos");
             }
-            return View();
-        }
-
-        public IActionResult Erro()
-        {
             return View();
         }
 
@@ -51,7 +46,8 @@ namespace AfReparosAutomotivos.Controllers
                 List<Claim> direitosAcesso = new List<Claim>
                 {
                     new Claim(ClaimTypes.NameIdentifier, funcionario.idFuncionario.ToString()),
-                    new Claim(ClaimTypes.Name, funcionario.Nome)
+                    new Claim(ClaimTypes.Name, funcionario.Nome),
+                    new Claim(ClaimTypes.Role, funcionario.permissao.ToString())
                 };
 
                 /// Cria o cartão de identidade do usuário(com todos os claims) e o principal (usuário).
@@ -59,7 +55,7 @@ namespace AfReparosAutomotivos.Controllers
                 var user = new ClaimsPrincipal(new[] { identity });
 
                 /// Loga o usuário na aplicação. E define o cookie como não persistente.
-                await HttpContext.SignInAsync(user, new AuthenticationProperties
+                await HttpContext.SignInAsync("Identity.Login", user, new AuthenticationProperties
                 {
                     IsPersistent = false
                 });
@@ -80,7 +76,7 @@ namespace AfReparosAutomotivos.Controllers
             if (User.Identity?.IsAuthenticated == true)
             {
                 /// Remove o cookie de autenticação.
-                await HttpContext.SignOutAsync();
+                await HttpContext.SignOutAsync("Identity.Login");
             }
             return RedirectToAction("Index", "Home");
         }

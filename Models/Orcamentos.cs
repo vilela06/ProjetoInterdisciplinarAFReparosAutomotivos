@@ -94,19 +94,5 @@ namespace AfReparosAutomotivos.Models
         public string modelo { get; set; } = string.Empty;
 
         public ICollection<Item> Itens { get; set; } = new List<Item>();
-
-        public static implicit operator Orcamentos(OrcamentosViewModel v) => new()
-        {
-            idOrcamento = v.idOrcamento,
-            idFuncionario = v.idFuncionario,
-            idCliente = v.idCliente,
-            veiculoId = v.idVeiculo ?? 0,
-            dataCriacao = v.dataCriacao,
-            dataEntrega = v.dataEntrega,
-            status = v.status,
-            total = v.total,
-            formaPagamento = v.formaPagamento,
-            parcelas = v.parcelas
-        };
     }
 }

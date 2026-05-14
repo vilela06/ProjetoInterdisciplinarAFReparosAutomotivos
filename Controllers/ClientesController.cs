@@ -42,7 +42,20 @@ public class ClientesController : Controller
     [HttpPost, ActionName("Edit")]
     public async Task<IActionResult> Update(Clientes cliente)
     {
-        await _clienteRepository.Update(cliente);
-        return RedirectToAction("Index", "Clientes");
+        if (!ModelState.IsValid)
+        {
+            return View("Edit", cliente);
+        }
+
+        try
+        {
+            await _clienteRepository.Update(cliente);
+            return RedirectToAction("Index", "Clientes");
+        }
+        catch (Exception ex)
+        {
+            ModelState.AddModelError(string.Empty, $"Não foi possível salvar o cliente: {ex.Message}");
+            return View("Edit", cliente);
+        }
     }
 }

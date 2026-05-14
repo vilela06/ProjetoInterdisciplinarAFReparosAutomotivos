@@ -1,0 +1,36 @@
+@model AfReparosAutomotivos.Models.Pecas
+
+@{
+    ViewData["Title"] = "Detalhes da Peça";
+}
+
+<div class="container mt-5">
+    <div class="card shadow-lg rounded-4 border-0">
+        <div class="card-header text-white text-center rounded-top-4" style="background-color: #3b2e1a">
+            <h3 class="mb-0">Detalhes da Peça</h3>
+        </div>
+        <div class="card-body p-4">
+            <dl class="row g-3">
+                <dt class="col-sm-4">ID</dt>
+                <dd class="col-sm-8">@Model.idPeca</dd>
+                <dt class="col-sm-4">Peça</dt>
+                <dd class="col-sm-8">@Model.nome</dd>
+                <dt class="col-sm-4">Quantidade</dt>
+                <dd class="col-sm-8">@Model.qtdEsto</dd>
+                <dt class="col-sm-4">Valor base</dt>
+                <dd class="col-sm-8">@Model.valor.ToString("C")</dd>
+            </dl>
+        </div>
+        <div class="card-footer bg-light border-0 pt-3 pb-4 d-flex justify-content-end gap-3">
+            <a asp-action="Index" class="btn btn-outline-secondary px-4">
+                <i class="fas fa-arrow-left"></i> Voltar
+            </a>
+            @if (User.IsInRole("1"))
+            {
+                <a asp-action="Edit" asp-route-id="@Model.idPeca" class="btn-login px-4">
+                    <i class="fas fa-pencil-alt"></i> Editar
+                </a>
+            }
+        </div>
+    </div>
+</div>

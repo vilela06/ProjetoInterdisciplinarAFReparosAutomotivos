@@ -32,5 +32,11 @@ namespace AfReparosAutomotivos.Models
             get => PrecoBase;
             set => PrecoBase = value;
         }
+
+        [Display(Name = "Funcionário responsável")]
+        public string FuncionarioResponsavel { get; set; } = "Sem responsável";
+
+        [Display(Name = "Status")]
+        public string Status { get; set; } = "Catálogo";
     }
 }

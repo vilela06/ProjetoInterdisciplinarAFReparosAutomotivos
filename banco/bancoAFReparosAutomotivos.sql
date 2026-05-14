@@ -8,8 +8,8 @@ CREATE TABLE Pessoa
 (
 	idPessoa		INT				NOT NULL	PRIMARY KEY	IDENTITY,
 	nome			VARCHAR(50)		NOT NULL,
-	telefone		VARCHAR(15)		NOT NULL,
-	documento		VARCHAR(14)		NOT NULL	UNIQUE,
+	celular			VARCHAR(15)		NOT NULL,
+	documento		VARCHAR(18)		NOT NULL	UNIQUE,
 	tipo_doc		CHAR			NOT NULL							CHECK	(tipo_doc in ('F', 'J'))
 )
 GO
@@ -18,6 +18,7 @@ CREATE TABLE Endereco
 (
     pessoaId		INT				NOT NULL	PRIMARY KEY,
     logradouro		VARCHAR(150)	NOT NULL,
+	numero			VARCHAR(5)		NOT NULL,
     cidade			VARCHAR(100)	NOT NULL,
     estado			VARCHAR(2)		NOT NULL,
 	CEP				VARCHAR(9)		NOT NULL,
@@ -39,6 +40,7 @@ GO
 CREATE TABLE Cliente
 (
 	idCliente		INT				NOT NULL	PRIMARY KEY	REFERENCES	Pessoa(idPessoa),
+	telefone		VARCHAR(14)		NULL,
 	email			VARCHAR(50)		NOT NULL,
 	statusCli		INT				NOT NULL	DEFAULT		1								CHECK	(statusCli		in	(1, 2)), -- Ativo ou inativo
 	chaveCli		VARCHAR(19)		NOT NULL	UNIQUE	

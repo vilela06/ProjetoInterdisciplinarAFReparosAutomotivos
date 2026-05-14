@@ -1,0 +1,11 @@
+@model AfReparosAutomotivos.Models.Pecas
+
+@{
+    ViewData["Title"] = "Editar Peça";
+}
+
+<partial name="_PecaForm" model="Model" />
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}
