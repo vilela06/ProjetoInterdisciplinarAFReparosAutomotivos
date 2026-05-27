@@ -368,7 +368,10 @@
             document.getElementById('stepCadastro').classList.add('is-active');
         });
 
-        document.getElementById('orcamentoForm').addEventListener('submit', composeEndereco);
+        document.getElementById('orcamentoForm').addEventListener('submit', () => {
+            composeEndereco();
+            clearDraft();
+        });
 
         document.getElementById('nomeCliente').addEventListener('input', event => {
             const termo = event.target.value.trim();
@@ -421,9 +424,9 @@
             }, 250);
         });
 
-        document.getElementById('btnAdicionarServico').addEventListener('click', () => {
-            const html = `
-                <div class="af-service-item" data-service-index="${serviceIndexCounter}">
+        function buildServiceLineHtml(index) {
+            return `
+                <div class="af-service-item" data-service-index="${index}">
                     <div class="af-service-toggles">
                         <label class="af-toggle is-locked"><input type="checkbox" checked disabled /> Serviço</label>
                         <label class="af-toggle"><input type="checkbox" data-toggle-piece /> Peça</label>
@@ -431,32 +434,151 @@
                             <i class="fas fa-trash"></i>
                         </button>
                     </div>
-                    <label>Qtd.<span class="af-required">*</span><input name="ServicosAssociados[${serviceIndexCounter}].qtd" type="number" min="1" value="1" required data-total-field /></label>
+                    <label>Qtd.<span class="af-required">*</span><input name="ServicosAssociados[${index}].qtd" type="number" min="1" value="1" required data-total-field /></label>
                     <label class="af-service-description">Serviço<span class="af-required">*</span>
-                        <input name="ServicosAssociados[${serviceIndexCounter}].novoServicoDescricao" list="servicos-list" maxlength="50" required data-service-name data-total-field />
-                        <input name="ServicosAssociados[${serviceIndexCounter}].idServico" type="hidden" value="0" data-service-id />
+                        <input name="ServicosAssociados[${index}].novoServicoDescricao" list="servicos-list" maxlength="50" required data-service-name data-total-field />
+                        <input name="ServicosAssociados[${index}].idServico" type="hidden" value="0" data-service-id />
                     </label>
                     <label>Funcionário<span class="af-required">*</span>
-                        <select name="ServicosAssociados[${serviceIndexCounter}].funcionarioId" required>${optionHtml(funcionariosDisponiveisOptionsData, 'Selecione...')}</select>
+                        <select name="ServicosAssociados[${index}].funcionarioId" required>${optionHtml(funcionariosDisponiveisOptionsData, 'Selecione...')}</select>
                     </label>
-                    <label>Valor<span class="af-required">*</span><input name="ServicosAssociados[${serviceIndexCounter}].preco" type="number" step="0.01" min="0" required data-service-price data-total-field /></label>
+                    <label>Valor<span class="af-required">*</span><input name="ServicosAssociados[${index}].preco" type="number" step="0.01" min="0" required data-service-price data-total-field /></label>
                     <div class="af-piece-row">
-                        <label>Peça<span class="af-required">*</span><select name="ServicosAssociados[${serviceIndexCounter}].pecaId" data-piece-select data-total-field>${optionHtml(pecasDisponiveisOptionsData, 'Selecione a peça...')}</select></label>
-                        <label>Qtd. peça<span class="af-required">*</span><input name="ServicosAssociados[${serviceIndexCounter}].qtdPeca" type="number" min="1" value="1" data-piece-qty data-total-field /></label>
-                        <label>Valor peça<span class="af-required">*</span><input name="ServicosAssociados[${serviceIndexCounter}].valorPeca" type="number" step="0.01" min="0" value="0" readonly data-piece-price data-total-field /></label>
+                        <label>Peça<span class="af-required">*</span><select name="ServicosAssociados[${index}].pecaId" data-piece-select data-total-field>${optionHtml(pecasDisponiveisOptionsData, 'Selecione a peça...')}</select></label>
+                        <label>Qtd. peça<span class="af-required">*</span><input name="ServicosAssociados[${index}].qtdPeca" type="number" min="1" value="1" data-piece-qty data-total-field /></label>
+                        <label>Valor peça<span class="af-required">*</span><input name="ServicosAssociados[${index}].valorPeca" type="number" step="0.01" min="0" value="0" readonly data-piece-price data-total-field /></label>
                     </div>
-                    <input type="hidden" name="ServicosAssociados[${serviceIndexCounter}].desconto" value="0" />
-                    <input type="hidden" name="ServicosAssociados[${serviceIndexCounter}].taxa" value="0" />
-                    <input type="hidden" name="ServicosAssociados[${serviceIndexCounter}].observacao" value="" />
-                    <input type="hidden" name="ServicosAssociados[${serviceIndexCounter}].data_entrega" value="" />
+                    <input type="hidden" name="ServicosAssociados[${index}].desconto" value="0" />
+                    <input type="hidden" name="ServicosAssociados[${index}].taxa" value="0" />
+                    <input type="hidden" name="ServicosAssociados[${index}].observacao" value="" />
+                    <input type="hidden" name="ServicosAssociados[${index}].data_entrega" value="" />
                 </div>`;
+        }
 
-            document.getElementById('servicos-container').insertAdjacentHTML('beforeend', html);
+        document.getElementById('btnAdicionarServico').addEventListener('click', () => {
+            document.getElementById('servicos-container').insertAdjacentHTML('beforeend', buildServiceLineHtml(serviceIndexCounter));
             bindLine(document.querySelector(`[data-service-index="${serviceIndexCounter}"]`));
             serviceIndexCounter++;
         });
 
+        // --- Persistência do rascunho (localStorage) ---
+        const DRAFT_KEY = 'af_orcamento_draft';
+        let _draftTimer;
+
+        function getDraftData() {
+            const servicos = [];
+            document.querySelectorAll('.af-service-item').forEach(line => {
+                servicos.push({
+                    qtd:      line.querySelector('[name$=".qtd"]')?.value ?? '1',
+                    desc:     line.querySelector('[data-service-name]')?.value ?? '',
+                    idSvc:    line.querySelector('[data-service-id]')?.value ?? '0',
+                    funcId:   line.querySelector('select[name$=".funcionarioId"]')?.value ?? '',
+                    preco:    line.querySelector('[data-service-price]')?.value ?? '',
+                    hasPeca:  line.querySelector('[data-toggle-piece]')?.checked ?? false,
+                    pecaId:   line.querySelector('[data-piece-select]')?.value ?? '',
+                    qtdPeca:  line.querySelector('[data-piece-qty]')?.value ?? '1'
+                });
+            });
+            return {
+                idCliente: document.getElementById('idCliente').value,
+                nome:      document.getElementById('nomeCliente').value,
+                telefone:  document.getElementById('telefoneCliente').value,
+                celular:   document.getElementById('celularCliente').value,
+                documento: document.getElementById('documentoCliente').value,
+                email:     document.getElementById('emailCliente').value,
+                rua:       document.getElementById('ruaCliente').value,
+                numero:    document.getElementById('numeroCliente').value,
+                cidade:    document.getElementById('cidadeCliente').value,
+                uf:        document.getElementById('ufCliente').value,
+                cep:       document.getElementById('cepCliente').value,
+                idVeiculo: document.getElementById('idVeiculo').value,
+                placa:     document.getElementById('placaVeiculo').value,
+                marca:     document.getElementById('marcaVeiculo').value,
+                modelo:    document.getElementById('modeloVeiculo').value,
+                cor:       document.getElementById('corVeiculo').value,
+                ano:       document.getElementById('anoVeiculo').value,
+                pagto:     document.querySelector('[name="formaPagamento"]')?.value ?? '',
+                servicos
+            };
+        }
+
+        function saveDraft() {
+            try { localStorage.setItem(DRAFT_KEY, JSON.stringify(getDraftData())); } catch (_) {}
+        }
+
+        function scheduleSave() {
+            clearTimeout(_draftTimer);
+            _draftTimer = setTimeout(saveDraft, 300);
+        }
+
+        function clearDraft() {
+            try { localStorage.removeItem(DRAFT_KEY); } catch (_) {}
+        }
+
+        function restoreDraft() {
+            let draft;
+            try {
+                const raw = localStorage.getItem(DRAFT_KEY);
+                if (!raw) return;
+                draft = JSON.parse(raw);
+            } catch (_) { return; }
+
+            const set = (id, val) => { const el = document.getElementById(id); if (el) el.value = val ?? ''; };
+
+            set('idCliente', draft.idCliente);
+            set('nomeCliente', draft.nome);
+            set('telefoneCliente', draft.telefone);
+            set('celularCliente', draft.celular);
+            set('documentoCliente', draft.documento);
+            set('emailCliente', draft.email);
+            set('ruaCliente', draft.rua);
+            set('numeroCliente', draft.numero);
+            set('cidadeCliente', draft.cidade);
+            set('ufCliente', draft.uf);
+            set('cepCliente', draft.cep);
+            composeEndereco();
+
+            set('idVeiculo', draft.idVeiculo);
+            set('placaVeiculo', draft.placa);
+            set('marcaVeiculo', draft.marca);
+            set('modeloVeiculo', draft.modelo);
+            set('corVeiculo', draft.cor);
+            set('anoVeiculo', draft.ano);
+
+            const pagto = document.querySelector('[name="formaPagamento"]');
+            if (pagto) pagto.value = draft.pagto ?? '';
+
+            if (!draft.servicos?.length) return;
+
+            const container = document.getElementById('servicos-container');
+            for (let i = 1; i < draft.servicos.length; i++) {
+                container.insertAdjacentHTML('beforeend', buildServiceLineHtml(serviceIndexCounter));
+                bindLine(container.querySelector(`[data-service-index="${serviceIndexCounter}"]`));
+                serviceIndexCounter++;
+            }
+
+            document.querySelectorAll('.af-service-item').forEach((line, i) => {
+                if (i >= draft.servicos.length) return;
+                const s = draft.servicos[i];
+                const q = (sel, val) => { const el = line.querySelector(sel); if (el) el.value = val ?? ''; };
+                q('[name$=".qtd"]', s.qtd);
+                q('[data-service-name]', s.desc);
+                q('[data-service-id]', s.idSvc);
+                q('select[name$=".funcionarioId"]', s.funcId);
+                q('[data-service-price]', s.preco);
+                q('[data-piece-select]', s.pecaId);
+                q('[data-piece-qty]', s.qtdPeca);
+                const toggle = line.querySelector('[data-toggle-piece]');
+                if (toggle) toggle.checked = !!s.hasPeca;
+                updateLine(line);
+            });
+        }
+
         document.querySelectorAll('.af-service-item').forEach(bindLine);
+        restoreDraft();
+
+        document.getElementById('orcamentoForm').addEventListener('input', scheduleSave);
+        document.getElementById('orcamentoForm').addEventListener('change', scheduleSave);
 
         @if (mensagemModal != null)
         {
