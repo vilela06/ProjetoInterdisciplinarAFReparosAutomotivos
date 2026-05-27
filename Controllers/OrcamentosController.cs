@@ -502,6 +502,17 @@ public class OrcamentosController : Controller
     public async Task<IActionResult> Update(int id)
     {
         var orcamento = await _orcamentoRepository.GetId(id);
+        if (orcamento == null)
+        {
+            return NotFound();
+        }
+
+        if (orcamento.status == 5)
+        {
+            TempData["OrcamentoMensagem"] = "Orcamento finalizado nao pode ser alterado.";
+            return RedirectToAction("Index");
+        }
+
         return View(orcamento);
     }
 
@@ -512,6 +523,18 @@ public class OrcamentosController : Controller
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Update(OrcamentosViewModel orcamentoViewModel)
     {
+        var orcamentoAtual = await _orcamentoRepository.GetId(orcamentoViewModel.idOrcamento);
+        if (orcamentoAtual == null)
+        {
+            return NotFound();
+        }
+
+        if (orcamentoAtual.status == 5)
+        {
+            TempData["OrcamentoMensagem"] = "Orcamento finalizado nao pode ser alterado.";
+            return RedirectToAction("Index");
+        }
+
         var todosOsItensCalculados = new List<ItemViewModel>();
         decimal totalGeral = 0;
 
@@ -571,6 +594,36 @@ public class OrcamentosController : Controller
 
         await _orcamentoRepository.Update(orcamentoViewModel);
         return RedirectToAction("Details", "Orcamentos", new { id = orcamentoViewModel.idOrcamento });
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Delete(int id)
+    {
+        var orcamento = await _orcamentoRepository.GetId(id);
+        if (orcamento == null)
+        {
+            return NotFound();
+        }
+
+        if (orcamento.status is 2 or 4 or 5)
+        {
+            TempData["OrcamentoMensagem"] = "Este orcamento nao pode ser excluido por estar aprovado, em execucao ou finalizado.";
+            return RedirectToAction("Index");
+        }
+
+        var itens = await _itemRepository.GetByOrcamento(id);
+        if (orcamento.status == 1)
+        {
+            foreach (var item in itens.Where(item => item.pecaId.HasValue && item.qtdPeca > 0))
+            {
+                await _pecaRepository.ReporEstoque(item.pecaId!.Value, item.qtdPeca);
+            }
+        }
+
+        await _orcamentoRepository.Delete(id);
+        TempData["OrcamentoMensagem"] = "Orcamento excluido com sucesso.";
+        return RedirectToAction("Index");
     }
 
 }

@@ -70,7 +70,7 @@ namespace AfReparosAutomotivos.Repositories
             await connection.OpenAsync();
             await using var command = new SqlCommand(
                 BaseSelect() +
-                " WHERE p.nome LIKE @termo OR p.documento LIKE @termo " +
+                " WHERE p.nome LIKE @termo OR CONVERT(VARCHAR(20), c.idCliente) LIKE @termo " +
                 "ORDER BY p.nome",
                 connection);
             command.Parameters.AddWithValue("@termo", $"%{termo?.Trim()}%");

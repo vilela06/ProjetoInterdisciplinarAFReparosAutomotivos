@@ -3,24 +3,39 @@
 
 @{
     ViewData["Title"] = "Lista de Clientes";
-    
-    var currentDocumento = Context.Request.Query["documento"].ToString();
-    var currentNome = Context.Request.Query["nome"].ToString();
-    var currentTelefone = Context.Request.Query["telefone"].ToString();
-    var currentEndereco = Context.Request.Query["endereco"].ToString();
+    var currentBusca = Context.Request.Query["busca"].ToString();
 }
 
 <div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center gap-3 mt-5 mb-3">
+        <h3 class="mb-0">Clientes (@(Model?.Count ?? 0))</h3>
+        <form method="get" asp-action="Index" class="d-flex" style="max-width: 360px; width: 100%;">
+            <input type="text"
+                   name="busca"
+                   value="@currentBusca"
+                   class="form-control"
+                   placeholder="Buscar por id ou nome" />
+            <button type="submit" class="btn btn-primary ms-2" aria-label="Pesquisar cliente">
+                <i class="fas fa-search"></i>
+            </button>
+            @if (!string.IsNullOrWhiteSpace(currentBusca))
+            {
+                <a asp-action="Index" class="btn btn-outline-secondary ms-2" aria-label="Limpar busca">
+                    <i class="fas fa-times"></i>
+                </a>
+            }
+        </form>
+    </div>
+
     @if (Model != null && Model.Any())
     {
-        <h3 class="mb-3 mt-5">Clientes (@Model.Count)</h3>
         <table class="table table-striped table-hover rounded-3 overflow-hidden shadow-sm">
             <thead>
                 <tr class="table-primary">
                     <th class="text-left fw-semibold" scope="col">@Html.DisplayNameFor(model => model.First().id)</th>
                     <th class="text-left fw-semibold" scope="col">Cliente</th>
                     <th class="text-left fw-semibold" scope="col">Documento</th>
-                    <th class="text-left fw-semibold" scope="col">Telefone</th>
+                    <th class="text-left fw-semibold" scope="col">Celular</th>
                     <th class="text-left fw-semibold" scope="col">E-mail</th>
                     <th class="text-left fw-semibold" scope="col">Chave</th>
                     <th class="text-left fw-semibold" scope="col">Endereço</th>
@@ -41,7 +56,7 @@
                             @Html.DisplayFor(modelItem => item.documento)
                         </td>
                         <td>
-                            @Html.DisplayFor(modelItem => item.telefone)
+                            @Html.DisplayFor(modelItem => item.celular)
                         </td>
                         <td>
                             @Html.DisplayFor(modelItem => item.email)

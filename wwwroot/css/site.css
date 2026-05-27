@@ -588,6 +588,12 @@ body {
     color: #a20a15;
 }
 
+.af-action-disabled {
+    color: #8b867c;
+    background: #f4f1eb;
+    cursor: not-allowed;
+}
+
 .af-delete-modal {
     position: fixed;
     inset: 0;

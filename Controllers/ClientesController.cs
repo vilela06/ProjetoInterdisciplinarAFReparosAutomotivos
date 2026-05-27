@@ -18,10 +18,13 @@ public class ClientesController : Controller
         _clienteRepository = clienteRepository;
     }
 
-    public async Task<IActionResult> Index()
+    public async Task<IActionResult> Index(string? busca)
     {
-        var clientes = await _clienteRepository.GetAllAsync();
-        return View(clientes);
+        var clientes = string.IsNullOrWhiteSpace(busca)
+            ? await _clienteRepository.GetAllAsync()
+            : await _clienteRepository.Search(busca);
+
+        return View(clientes.ToList());
     }
 
     [HttpGet]

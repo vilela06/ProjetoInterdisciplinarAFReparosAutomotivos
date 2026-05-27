@@ -33,6 +33,34 @@ namespace AfReparosAutomotivos.Repositories
             return Convert.ToInt32(await command.ExecuteScalarAsync());
         }
 
+        public async Task Delete(int id)
+        {
+            await using var connection = CreateConnection();
+            await connection.OpenAsync();
+            await using var transaction = (SqlTransaction)await connection.BeginTransactionAsync();
+            try
+            {
+                await using (var itensCommand = new SqlCommand("DELETE FROM Itens WHERE orcamentoId = @id", connection, transaction))
+                {
+                    itensCommand.Parameters.AddWithValue("@id", id);
+                    await itensCommand.ExecuteNonQueryAsync();
+                }
+
+                await using (var command = new SqlCommand("DELETE FROM Orcamento WHERE idOrcamento = @id", connection, transaction))
+                {
+                    command.Parameters.AddWithValue("@id", id);
+                    await command.ExecuteNonQueryAsync();
+                }
+
+                await transaction.CommitAsync();
+            }
+            catch
+            {
+                await transaction.RollbackAsync();
+                throw;
+            }
+        }
+
         public async Task<IEnumerable<OrcamentosViewModel>> GetByChaveCliente(string chaveAcesso)
         {
             var orcamentos = new List<OrcamentosViewModel>();

@@ -7,6 +7,11 @@
 }
 
 <section class="af-admin-budget-screen">
+    @if (TempData["OrcamentoMensagem"] is string mensagem)
+    {
+        <div class="alert alert-warning mx-auto" style="max-width: 920px;" role="alert">@mensagem</div>
+    }
+
     <div class="af-admin-toolbar">
         <form method="get" asp-action="Index" class="af-admin-filter">
             @if (!string.IsNullOrWhiteSpace(currentBusca))
@@ -56,6 +61,8 @@
                     5 => "af-status-dark",
                     _ => "af-status-gray"
                 };
+                var bloqueiaEdicao = item.status == 5;
+                var bloqueiaExclusao = item.status is 2 or 4 or 5;
 
                 <div class="af-budget-row">
                     <span class="af-status-dot @statusClass"></span>
@@ -78,12 +85,31 @@
                     </button>
 
                     <div class="af-action-popover" id="action-menu-@item.idOrcamento">
-                        <a asp-action="Edit" asp-route-id="@item.idOrcamento" class="af-action-choice af-action-edit">
-                            <i class="fas fa-pencil-alt"></i> Alterar
-                        </a>
-                        <button type="button" class="af-action-choice af-action-delete" data-delete-open="@item.idOrcamento">
-                            <i class="fas fa-trash-alt"></i> Excluir
-                        </button>
+                        @if (bloqueiaEdicao)
+                        {
+                            <span class="af-action-choice af-action-disabled" title="Orcamento finalizado nao pode ser alterado">
+                                <i class="fas fa-lock"></i> Alterar
+                            </span>
+                        }
+                        else
+                        {
+                            <a asp-action="Edit" asp-route-id="@item.idOrcamento" class="af-action-choice af-action-edit">
+                                <i class="fas fa-pencil-alt"></i> Alterar
+                            </a>
+                        }
+
+                        @if (bloqueiaExclusao)
+                        {
+                            <span class="af-action-choice af-action-disabled" title="Este status nao permite exclusao">
+                                <i class="fas fa-lock"></i> Excluir
+                            </span>
+                        }
+                        else
+                        {
+                            <button type="button" class="af-action-choice af-action-delete" data-delete-open="@item.idOrcamento">
+                                <i class="fas fa-trash-alt"></i> Excluir
+                            </button>
+                        }
                     </div>
 
                     <div class="af-delete-modal" id="delete-modal-@item.idOrcamento" aria-hidden="true">
