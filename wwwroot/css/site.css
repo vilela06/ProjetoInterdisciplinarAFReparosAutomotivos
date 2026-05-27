@@ -423,11 +423,11 @@ body {
 }
 
 .af-admin-toolbar {
-    width: min(720px, 80vw);
-    margin: 0 auto 28px;
+    width: auto;
+    margin: 0;
     display: flex;
     justify-content: space-between;
-    gap: 70px;
+    gap: 16px;
 }
 
 .af-admin-filter,
@@ -483,6 +483,11 @@ body {
     border-radius: 6px;
     overflow: visible;
     box-shadow: 0 1px 4px rgba(0,0,0,.12);
+}
+
+.af-budget-table-wrap {
+    width: min(920px, 96vw);
+    margin: 0 auto;
 }
 
 .af-budget-row {
