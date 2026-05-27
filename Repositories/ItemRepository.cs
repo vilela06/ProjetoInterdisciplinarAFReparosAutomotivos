@@ -20,7 +20,7 @@ namespace AfReparosAutomotivos.Repositories
             }
         }
 
-        public async Task DeleteByOrcamento(int orcamentoId)
+        private async Task DeleteByOrcamento(int orcamentoId)
         {
             await using var connection = CreateConnection();
             await connection.OpenAsync();
@@ -54,10 +54,11 @@ namespace AfReparosAutomotivos.Repositories
                     funcionarioId = reader.GetInt32(2),
                     pecaId = reader.IsDBNull(3) ? null : reader.GetInt32(3),
                     preco = reader.GetDecimal(4),
-                    desconto = reader.IsDBNull(5) ? 0m : reader.GetDecimal(5),
+                    desconto = 0m,
                     dataEntrega = reader.IsDBNull(6) ? null : reader.GetDateTime(6),
                     descricao = reader.GetString(7),
                     idVeiculo = reader.GetInt32(8),
+                    qtdPeca = reader.IsDBNull(3) ? 0 : Math.Max(1, Convert.ToInt32(reader.IsDBNull(5) ? 1m : reader.GetDecimal(5))),
                     qtd = 1,
                     taxa = 0m
                 });
@@ -91,7 +92,7 @@ namespace AfReparosAutomotivos.Repositories
             command.Parameters.AddWithValue("@funcionarioID", item.funcionarioId);
             command.Parameters.AddWithValue("@pecaId", (object?)item.pecaId ?? DBNull.Value);
             command.Parameters.AddWithValue("@preco", item.preco);
-            command.Parameters.AddWithValue("@desconto", (object?)item.desconto ?? DBNull.Value);
+            command.Parameters.AddWithValue("@desconto", item.pecaId.HasValue ? item.qtdPeca : (object?)item.desconto ?? DBNull.Value);
             command.Parameters.AddWithValue("@dataEntrega", (object?)item.dataEntrega ?? DBNull.Value);
         }
     }

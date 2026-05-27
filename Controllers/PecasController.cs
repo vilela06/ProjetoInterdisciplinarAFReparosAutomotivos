@@ -15,9 +15,12 @@ public class PecasController : Controller
         _pecaRepository = pecaRepository;
     }
 
-    public async Task<IActionResult> Index()
+    public async Task<IActionResult> Index(string? pesquisa)
     {
-        var pecas = await _pecaRepository.GetAll();
+        var pecas = string.IsNullOrWhiteSpace(pesquisa)
+            ? await _pecaRepository.GetAll()
+            : await _pecaRepository.Search(pesquisa);
+        ViewBag.Pesquisa = pesquisa ?? string.Empty;
         return View(pecas);
     }
 

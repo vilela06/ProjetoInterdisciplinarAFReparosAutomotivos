@@ -14,61 +14,28 @@ namespace AfReparosAutomotivos.Models
         [Display(Name = "ID do Cliente")]
         public int idCliente { get; set; }
 
-        public int clienteId
-        {
-            get => idCliente;
-            set => idCliente = value;
-        }
-
-        public int funcionarioId
-        {
-            get => idFuncionario;
-            set => idFuncionario = value;
-        }
-
         [Display(Name = "Data de Criacao")]
         public DateTime dataCriacao { get; set; } = DateTime.Now;
-
-        public DateTime data_criacao
-        {
-            get => dataCriacao;
-            set => dataCriacao = value;
-        }
 
         [Display(Name = "Data de Entrega")]
         public DateTime? dataEntrega { get; set; }
 
-        public DateTime? data_entrega
-        {
-            get => dataEntrega;
-            set => dataEntrega = value;
-        }
-
         [Display(Name = "Status")]
+        [Range(1, 5, ErrorMessage = "Informe um status valido.")]
         public int status { get; set; } = 1;
-
-        public int statusOrc
-        {
-            get => status;
-            set => status = value;
-        }
 
         [Display(Name = "Total")]
         public decimal total { get; set; }
 
         [Display(Name = "Forma de Pagamento")]
+        [Required(ErrorMessage = "Informe a forma de pagamento.")]
         public string formaPagamento { get; set; } = string.Empty;
-
-        public string? forma_pgto
-        {
-            get => formaPagamento;
-            set => formaPagamento = value ?? string.Empty;
-        }
 
         [Display(Name = "Parcelas")]
         public int parcelas { get; set; }
 
         [Display(Name = "Nome do Cliente")]
+        [Required(ErrorMessage = "Informe o nome do cliente.")]
         public string nome { get; set; } = string.Empty;
 
         [Display(Name = "Nome do Funcionario")]
@@ -77,43 +44,47 @@ namespace AfReparosAutomotivos.Models
         public int? idCli { get; set; }
 
         [Display(Name = "Documento do Cliente (CPF/CNPJ)")]
+        [Required(ErrorMessage = "Informe o documento do cliente.")]
         public string DocumentoCli { get; set; } = string.Empty;
 
         [Display(Name = "Telefone")]
-        public string TelefoneCli { get; set; } = string.Empty;
+        public string? TelefoneCli { get; set; }
 
         [Display(Name = "Celular")]
         [Required(ErrorMessage = "Informe o celular.")]
         public string CelularCli { get; set; } = string.Empty;
 
+        [Display(Name = "E-mail")]
+        [Required(ErrorMessage = "Informe o e-mail.")]
+        [EmailAddress(ErrorMessage = "Informe um e-mail valido.")]
+        public string EmailCli { get; set; } = string.Empty;
+
         [Display(Name = "Endereco")]
+        [Required(ErrorMessage = "Informe o endereco do cliente.")]
         public string EnderecoCli { get; set; } = string.Empty;
 
         public int? idVeiculo { get; set; }
 
-        public int veiculoId
-        {
-            get => idVeiculo ?? 0;
-            set => idVeiculo = value;
-        }
-
         [Display(Name = "Placa do Veiculo")]
+        [Required(ErrorMessage = "Informe a placa do veiculo.")]
         public string Placa { get; set; } = string.Empty;
 
         [Display(Name = "Marca")]
+        [Required(ErrorMessage = "Informe a marca do veiculo.")]
         public string Marca { get; set; } = string.Empty;
 
         [Display(Name = "Modelo")]
+        [Required(ErrorMessage = "Informe o modelo do veiculo.")]
         public string Modelo { get; set; } = string.Empty;
 
-        [Display(Name = "Servico")]
-        public int IdServico { get; set; }
+        [Display(Name = "Cor")]
+        [Required(ErrorMessage = "Informe a cor do veiculo.")]
+        public string Cor { get; set; } = string.Empty;
 
-        [Display(Name = "Descricao")]
-        public string Descricao { get; set; } = string.Empty;
-
-        [Display(Name = "Preco Base")]
-        public decimal? PrecoBase { get; set; }
+        [Display(Name = "Ano")]
+        [Required(ErrorMessage = "Informe o ano do veiculo.")]
+        [Range(1886, 9999, ErrorMessage = "Informe um ano valido.")]
+        public int? Ano { get; set; }
 
         public List<ItemViewModel> ServicosAssociados { get; set; } = new();
 

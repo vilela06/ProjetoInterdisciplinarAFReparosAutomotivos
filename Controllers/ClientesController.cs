@@ -2,7 +2,6 @@ using Microsoft.AspNetCore.Mvc;
 using AfReparosAutomotivos.Models;
 using Microsoft.AspNetCore.Authorization;
 using AfReparosAutomotivos.Interfaces;
-using AfReparosAutomotivos.Models.ViewModels;
 
 namespace AfReparosAutomotivos.Controllers;
 

@@ -146,20 +146,15 @@ public class OrcamentosController : Controller
     /// </summary>
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Create(OrcamentosViewModel orcamentoViewModel)
+    public async Task<IActionResult> Create(OrcamentosViewModel orcamentoViewModel, string acao)
     {
         var idClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier);
         var idFuncionario = idClaim != null && int.TryParse(idClaim.Value, out int id) ? id : 1;
+        orcamentoViewModel.DocumentoCli = ApenasNumeros(orcamentoViewModel.DocumentoCli);
 
         if (!ModelState.IsValid)
         {
-            foreach (var state in ModelState)
-            {
-                if (state.Value.Errors.Any())
-                {
-                    Console.WriteLine($"[ERRO DE MODEL BINDING] Campo: {state.Key}, Erro: {string.Join(", ", state.Value.Errors.Select(e => e.ErrorMessage))}");
-                }
-            }
+            AdicionarMensagemErrosValidacao();
             await CarregarServicosNoViewModel(orcamentoViewModel); 
             return View(orcamentoViewModel);
         }
@@ -184,11 +179,13 @@ public class OrcamentosController : Controller
                 Clientes cliente = new Clientes
                 {
                     nome = orcamentoViewModel.nome,
-                    telefone = orcamentoViewModel.TelefoneCli,
+                    telefone = string.IsNullOrWhiteSpace(orcamentoViewModel.TelefoneCli) ? null : orcamentoViewModel.TelefoneCli,
                     celular = orcamentoViewModel.CelularCli,
+                    email = orcamentoViewModel.EmailCli,
                     endereco = orcamentoViewModel.EnderecoCli,
                     documento = orcamentoViewModel.DocumentoCli ?? string.Empty
                 };
+                PreencherEnderecoCliente(cliente, orcamentoViewModel.EnderecoCli);
                 idCliente = await _clienteRepository.Add(cliente);
             }
 
@@ -203,7 +200,9 @@ public class OrcamentosController : Controller
                     clienteId = idCliente,
                     placa = orcamentoViewModel.Placa,
                     marca = orcamentoViewModel.Marca,
-                    modelo = orcamentoViewModel.Modelo
+                    modelo = orcamentoViewModel.Modelo,
+                    cor = orcamentoViewModel.Cor,
+                    ano = orcamentoViewModel.Ano.GetValueOrDefault()
                 };
 
                 idVeiculo = await _veiculoRepository.Add(veiculoEntidade);
@@ -213,6 +212,18 @@ public class OrcamentosController : Controller
                 .Where(item => item != null && item.qtd > 0 && item.funcionarioId > 0 &&
                     (item.idServico > 0 || (!string.IsNullOrWhiteSpace(item.novoServicoDescricao) && item.preco > 0)))
                 .ToList();
+
+            var servicosRepetidos = itensDoOrcamento
+                .Where(item => item.idServico > 0)
+                .GroupBy(item => item.idServico)
+                .Where(grupo => grupo.Count() > 1)
+                .Select(grupo => grupo.Key)
+                .ToList();
+
+            if (servicosRepetidos.Any())
+            {
+                throw new InvalidOperationException("Nao repita o mesmo servico no orcamento. O banco permite cada servico apenas uma vez por orcamento.");
+            }
                     
             foreach (var item in itensDoOrcamento)
             {
@@ -233,7 +244,17 @@ public class OrcamentosController : Controller
                 if (item.pecaId.HasValue)
                 {
                     var peca = await _pecaRepository.GetId(item.pecaId.Value);
-                    valorPeca = peca?.valor ?? item.valorPeca;
+                    if (peca == null)
+                    {
+                        throw new InvalidOperationException("A peca selecionada nao foi encontrada.");
+                    }
+
+                    if (peca.qtdEsto < item.qtdPeca)
+                    {
+                        throw new InvalidOperationException($"Estoque insuficiente para a peca {peca.nome}.");
+                    }
+
+                    valorPeca = peca.valor;
                 }
 
                 item.valorPeca = valorPeca;
@@ -254,6 +275,7 @@ public class OrcamentosController : Controller
             }
 
             orcamentoViewModel.total = totalGeral;
+            orcamentoViewModel.status = 1;
 
             Orcamentos orcamento = new Orcamentos
             {
@@ -285,6 +307,7 @@ public class OrcamentosController : Controller
                         funcionarioId = itemViewModel.funcionarioId,
                         pecaId = itemViewModel.pecaId,
                         qtd = itemViewModel.qtd,
+                        qtdPeca = itemViewModel.qtdPeca,
                         data_entrega = itemViewModel.data_entrega, 
                         preco = itemViewModel.preco,
                         descricao = itemViewModel.observacao,
@@ -296,6 +319,43 @@ public class OrcamentosController : Controller
                 }
 
                 await _itemRepository.Add(listaEntidadesItens);
+
+                foreach (var item in listaEntidadesItens.Where(item => item.pecaId.HasValue))
+                {
+                    var baixouEstoque = await _pecaRepository.BaixarEstoque(item.pecaId!.Value, item.qtdPeca);
+                    if (!baixouEstoque)
+                    {
+                        throw new InvalidOperationException("Nao foi possivel baixar o estoque de uma das pecas do orcamento.");
+                    }
+                }
+            }
+
+            if (string.Equals(acao, "gerar", StringComparison.OrdinalIgnoreCase))
+            {
+                var clienteAviso = await _clienteRepository.GetId(idCliente);
+                var mensagemAviso = CriarMensagemAvisoCliente(clienteAviso, idOrcamento);
+                var avisoUrl = CriarLinkAvisoCliente(clienteAviso?.celular ?? orcamentoViewModel.CelularCli, mensagemAviso);
+                var emailAviso = string.IsNullOrWhiteSpace(clienteAviso?.email) ? orcamentoViewModel.EmailCli : clienteAviso.email;
+                var avisoEmailUrl = CriarLinkEmailCliente(emailAviso, mensagemAviso);
+
+                if (avisoUrl == null)
+                {
+                    TempData["AvisoClienteMensagem"] = "Orcamento salvo, mas o cliente nao possui celular cadastrado para envio do aviso.";
+                }
+                else
+                {
+                    TempData["AvisoClienteUrl"] = avisoUrl;
+                    TempData["AvisoClienteMensagem"] = "Orcamento salvo. O aviso ao cliente foi preparado para envio pelo celular e e-mail.";
+                }
+
+                if (avisoEmailUrl != null)
+                {
+                    TempData["AvisoClienteEmailUrl"] = avisoEmailUrl;
+                }
+            }
+            else
+            {
+                TempData["AvisoClienteMensagem"] = "Orcamento salvo como rascunho.";
             }
 
             return RedirectToAction("Details", "Orcamentos", new { id = idOrcamento });
@@ -313,54 +373,126 @@ public class OrcamentosController : Controller
         }
     }
 
-    [HttpGet]
-    public async Task<IActionResult> PesquisarCliente(string documento)
+    private string CriarMensagemAvisoCliente(Clientes? cliente, int idOrcamento)
     {
-        if (string.IsNullOrWhiteSpace(documento))
-        {
-            return Json(null);
-        }
-        
-        var cliente = await _clienteRepository.GetByDocumento(documento); 
-        
-        if (cliente == null)
-        {
-            return Json(null);
-        }
+        var linkConsulta = Url.Action("ClienteOrcamentos", "Home", null, Request.Scheme) ?? string.Empty;
+        var chave = string.IsNullOrWhiteSpace(cliente?.chaveCli) ? "nao cadastrada" : cliente.chaveCli;
 
-        return Json(new { 
-            id = cliente.id, 
-            nome = cliente.nome, 
-            telefone = cliente.telefone, 
-            celular = cliente.celular,
-            endereco = cliente.endereco 
-        });
+        return $"Ola! Voce possui um novo orcamento para analisar. Orcamento: {idOrcamento}. Sua chave de acesso: {chave}. Acesse: {linkConsulta}";
     }
 
-    /// <summary>
-    /// Pesquisa se a placa do veículo já existe no banco.
-    /// </summary>
-    /// <param name="placa">A placa a ser pesquisada.</param>
-    /// <returns></returns>
-    public async Task<IActionResult> PesquisarVeiculo(string placa)
+    private string? CriarLinkAvisoCliente(string? celular, string mensagem)
     {
-        if (string.IsNullOrWhiteSpace(placa))
+        var numeros = new string((celular ?? string.Empty).Where(char.IsDigit).ToArray());
+        if (string.IsNullOrWhiteSpace(numeros))
         {
-            return Json(null);
-        }
-        
-        var veiculo = await _veiculoRepository.GetByPlaca(placa); 
-        
-        if (veiculo == null)
-        {
-            return Json(null);
+            return null;
         }
 
-        return Json(new { 
-            id = veiculo.id, 
-            marca = veiculo.marca, 
-            modelo = veiculo.modelo
-        });
+        if (!numeros.StartsWith("55", StringComparison.Ordinal))
+        {
+            numeros = $"55{numeros}";
+        }
+
+        return $"https://wa.me/{numeros}?text={Uri.EscapeDataString(mensagem)}";
+    }
+
+    private static string? CriarLinkEmailCliente(string? email, string mensagem)
+    {
+        if (string.IsNullOrWhiteSpace(email))
+        {
+            return null;
+        }
+
+        var assunto = Uri.EscapeDataString("Novo orcamento para analisar");
+        var corpo = Uri.EscapeDataString(mensagem);
+        return $"mailto:{email}?subject={assunto}&body={corpo}";
+    }
+
+    private static string ApenasNumeros(string? valor)
+    {
+        return new string((valor ?? string.Empty).Where(char.IsDigit).ToArray());
+    }
+
+    private static void PreencherEnderecoCliente(Clientes cliente, string endereco)
+    {
+        var partes = (endereco ?? string.Empty)
+            .Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
+
+        cliente.logradouro = partes.ElementAtOrDefault(0) ?? string.Empty;
+        cliente.numero = partes.ElementAtOrDefault(1) ?? string.Empty;
+        cliente.cidade = partes.ElementAtOrDefault(2) ?? string.Empty;
+        cliente.estado = partes.ElementAtOrDefault(3) ?? string.Empty;
+        cliente.cep = partes.ElementAtOrDefault(4) ?? string.Empty;
+    }
+
+    private void AdicionarMensagemErrosValidacao()
+    {
+        var mensagens = ModelState
+            .Where(campo => campo.Value?.Errors.Any() == true)
+            .SelectMany(campo => campo.Value!.Errors.Select(erro => erro.ErrorMessage))
+            .Where(mensagem => !string.IsNullOrWhiteSpace(mensagem))
+            .Distinct()
+            .ToList();
+
+        if (!mensagens.Any())
+        {
+            return;
+        }
+
+        var erro = new Modal
+        {
+            Title = "Campos obrigatorios",
+            Mensagem = string.Join(" ", mensagens)
+        };
+
+        TempData["Mensagem"] = JsonSerializer.Serialize(erro);
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> BuscarClientes(string termo)
+    {
+        if (string.IsNullOrWhiteSpace(termo))
+        {
+            return Json(Array.Empty<object>());
+        }
+
+        var clientes = await _clienteRepository.Search(termo);
+        return Json(clientes.Take(10).Select(cliente => new
+        {
+            id = cliente.id,
+            nome = cliente.nome,
+            documento = cliente.documento,
+            telefone = cliente.telefone,
+            celular = cliente.celular,
+            email = cliente.email,
+            endereco = cliente.endereco,
+            logradouro = cliente.logradouro,
+            numero = cliente.numero,
+            cidade = cliente.cidade,
+            estado = cliente.estado,
+            cep = cliente.cep
+        }));
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> BuscarVeiculosCliente(int clienteId, string termo)
+    {
+        if (clienteId <= 0 || string.IsNullOrWhiteSpace(termo))
+        {
+            return Json(Array.Empty<object>());
+        }
+
+        var veiculos = await _veiculoRepository.SearchByCliente(clienteId, termo);
+        return Json(veiculos.Take(10).Select(veiculo => new
+        {
+            id = veiculo.id,
+            placa = veiculo.placa,
+            marca = veiculo.marca,
+            modelo = veiculo.modelo,
+            cor = veiculo.cor,
+            ano = veiculo.ano
+        }));
     }
 
     /// <summary>
@@ -418,7 +550,7 @@ public class OrcamentosController : Controller
                 {
                     idItem = itemViewModel.idItem,
                     idOrcamento = orcamentoViewModel.idOrcamento, 
-                    idVeiculo = orcamentoViewModel.veiculoId,
+                    idVeiculo = orcamentoViewModel.idVeiculo.GetValueOrDefault(),
                     idServico = itemViewModel.idServico,
                     funcionarioId = orcamentoViewModel.idFuncionario,
                     qtd = itemViewModel.qtd,
@@ -441,28 +573,4 @@ public class OrcamentosController : Controller
         return RedirectToAction("Details", "Orcamentos", new { id = orcamentoViewModel.idOrcamento });
     }
 
-    /// <summary>
-    /// Deleta o orçamento. O repositório já se encarrega de deletar os itens primeiro.
-    /// </summary>
-    [HttpPost]
-    [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Delete(int id)
-    {
-        try
-        {
-            await _orcamentoRepository.Delete(id);
-            
-            return RedirectToAction("Index", "Orcamentos");
-        }
-        catch (Exception ex)
-        {
-            var erro = new Modal
-            {
-                Title = "Erro na exclusão",
-                Mensagem = $"Não foi possível excluir o orçamento. Detalhes: {ex.Message}"
-            };
-            TempData["Mensagem"] = JsonSerializer.Serialize(erro);
-            return RedirectToAction("Index", "Orcamentos");
-        }
-    }
 }

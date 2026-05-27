@@ -31,6 +31,31 @@ namespace AfReparosAutomotivos.Repositories
             return await Get(string.Empty);
         }
 
+        public async Task<IEnumerable<Pecas>> Search(string termo)
+        {
+            if (string.IsNullOrWhiteSpace(termo))
+            {
+                return await GetAll();
+            }
+
+            var pecas = new List<Pecas>();
+            await using var connection = CreateConnection();
+            await connection.OpenAsync();
+            await using var command = new SqlCommand(
+                "SELECT idPeca, nome, valor, qtdEsto FROM Peca " +
+                "WHERE nome LIKE @termo OR CONVERT(VARCHAR(20), idPeca) LIKE @termo " +
+                "ORDER BY nome",
+                connection);
+            command.Parameters.AddWithValue("@termo", $"%{termo.Trim()}%");
+            await using var reader = await command.ExecuteReaderAsync();
+            while (await reader.ReadAsync())
+            {
+                pecas.Add(Map(reader));
+            }
+
+            return pecas;
+        }
+
         private async Task<IEnumerable<Pecas>> Get(string where)
         {
             var pecas = new List<Pecas>();
@@ -58,6 +83,30 @@ namespace AfReparosAutomotivos.Repositories
             command.Parameters.AddWithValue("@id", id);
             await using var reader = await command.ExecuteReaderAsync();
             return await reader.ReadAsync() ? Map(reader) : null;
+        }
+
+        public async Task<bool> BaixarEstoque(int id, int quantidade)
+        {
+            await using var connection = CreateConnection();
+            await connection.OpenAsync();
+            await using var command = new SqlCommand(
+                "UPDATE Peca SET qtdEsto = qtdEsto - @quantidade WHERE idPeca = @id AND qtdEsto >= @quantidade",
+                connection);
+            command.Parameters.AddWithValue("@id", id);
+            command.Parameters.AddWithValue("@quantidade", quantidade);
+            return await command.ExecuteNonQueryAsync() > 0;
+        }
+
+        public async Task ReporEstoque(int id, int quantidade)
+        {
+            await using var connection = CreateConnection();
+            await connection.OpenAsync();
+            await using var command = new SqlCommand(
+                "UPDATE Peca SET qtdEsto = qtdEsto + @quantidade WHERE idPeca = @id",
+                connection);
+            command.Parameters.AddWithValue("@id", id);
+            command.Parameters.AddWithValue("@quantidade", quantidade);
+            await command.ExecuteNonQueryAsync();
         }
 
         public async Task Update(Pecas peca)

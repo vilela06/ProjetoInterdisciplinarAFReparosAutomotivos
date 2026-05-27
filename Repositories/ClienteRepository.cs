@@ -1,6 +1,7 @@
 using AfReparosAutomotivos.Interfaces;
 using AfReparosAutomotivos.Models;
 using Microsoft.Data.SqlClient;
+using System.Data;
 
 namespace AfReparosAutomotivos.Repositories
 {
@@ -29,7 +30,8 @@ namespace AfReparosAutomotivos.Repositories
                     "INSERT INTO Cliente (idCliente, telefone, email, statusCli, chaveCli) VALUES (@id, @telefone, @email, 1, @chave)",
                     connection, transaction);
                 clienteCommand.Parameters.AddWithValue("@id", id);
-                clienteCommand.Parameters.AddWithValue("@telefone", string.IsNullOrWhiteSpace(cliente.telefone) ? DBNull.Value : cliente.telefone);
+                clienteCommand.Parameters.Add("@telefone", SqlDbType.VarChar, 14).Value =
+                    string.IsNullOrWhiteSpace(cliente.telefone) ? DBNull.Value : cliente.telefone;
                 clienteCommand.Parameters.AddWithValue("@email", string.IsNullOrWhiteSpace(cliente.email) ? $"{id}@sem-email.local" : cliente.email);
                 clienteCommand.Parameters.AddWithValue("@chave", Guid.NewGuid().ToString("N")[..19]);
                 await clienteCommand.ExecuteNonQueryAsync();
@@ -61,22 +63,32 @@ namespace AfReparosAutomotivos.Repositories
             return clientes;
         }
 
+        public async Task<IEnumerable<Clientes>> Search(string termo)
+        {
+            var clientes = new List<Clientes>();
+            await using var connection = CreateConnection();
+            await connection.OpenAsync();
+            await using var command = new SqlCommand(
+                BaseSelect() +
+                " WHERE p.nome LIKE @termo OR p.documento LIKE @termo " +
+                "ORDER BY p.nome",
+                connection);
+            command.Parameters.AddWithValue("@termo", $"%{termo?.Trim()}%");
+            await using var reader = await command.ExecuteReaderAsync();
+            while (await reader.ReadAsync())
+            {
+                clientes.Add(Map(reader));
+            }
+
+            return clientes;
+        }
+
         public async Task<Clientes?> GetId(int id)
         {
             await using var connection = CreateConnection();
             await connection.OpenAsync();
             await using var command = new SqlCommand(BaseSelect() + " WHERE c.idCliente = @id", connection);
             command.Parameters.AddWithValue("@id", id);
-            await using var reader = await command.ExecuteReaderAsync();
-            return await reader.ReadAsync() ? Map(reader) : null;
-        }
-
-        public async Task<Clientes?> GetByDocumento(string documento)
-        {
-            await using var connection = CreateConnection();
-            await connection.OpenAsync();
-            await using var command = new SqlCommand(BaseSelect() + " WHERE p.documento = @documento", connection);
-            command.Parameters.AddWithValue("@documento", documento);
             await using var reader = await command.ExecuteReaderAsync();
             return await reader.ReadAsync() ? Map(reader) : null;
         }
@@ -105,7 +117,8 @@ namespace AfReparosAutomotivos.Repositories
                     connection, transaction))
                 {
                     clienteCommand.Parameters.AddWithValue("@id", cliente.id);
-                    clienteCommand.Parameters.AddWithValue("@telefone", string.IsNullOrWhiteSpace(cliente.telefone) ? DBNull.Value : cliente.telefone);
+                    clienteCommand.Parameters.Add("@telefone", SqlDbType.VarChar, 14).Value =
+                        string.IsNullOrWhiteSpace(cliente.telefone) ? DBNull.Value : cliente.telefone;
                     clienteCommand.Parameters.AddWithValue("@email", string.IsNullOrWhiteSpace(cliente.email) ? $"{cliente.id}@sem-email.local" : cliente.email);
                     await clienteCommand.ExecuteNonQueryAsync();
                 }

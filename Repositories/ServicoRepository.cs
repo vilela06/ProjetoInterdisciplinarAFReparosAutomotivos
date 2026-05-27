@@ -27,7 +27,7 @@ namespace AfReparosAutomotivos.Repositories
             await connection.OpenAsync();
             await using var command = new SqlCommand(
                 "SELECT s.idServico, s.descricao, s.valorBase, COALESCE(p.nome, 'Sem responsável') AS funcionario, " +
-                "CASE MAX(o.statusOrc) WHEN 1 THEN 'Em aberto' WHEN 2 THEN 'Pago' WHEN 3 THEN 'Cancelado' ELSE 'Catálogo' END AS statusServico " +
+                "CASE MAX(o.statusOrc) WHEN 1 THEN 'Em analise' WHEN 2 THEN 'Aprovado' WHEN 3 THEN 'Recusado' WHEN 4 THEN 'Sendo executado' WHEN 5 THEN 'Finalizado' ELSE 'Catálogo' END AS statusServico " +
                 "FROM Servico s " +
                 "LEFT JOIN Itens i ON i.servicoId = s.idServico " +
                 "LEFT JOIN Funcionario f ON f.idFuncionario = i.funcionarioID " +

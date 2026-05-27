@@ -33,34 +33,6 @@ namespace AfReparosAutomotivos.Repositories
             return Convert.ToInt32(await command.ExecuteScalarAsync());
         }
 
-        public async Task Delete(int id)
-        {
-            await using var connection = CreateConnection();
-            await connection.OpenAsync();
-            await using var transaction = (SqlTransaction)await connection.BeginTransactionAsync();
-            try
-            {
-                await using (var itensCommand = new SqlCommand("DELETE FROM Itens WHERE orcamentoId = @id", connection, transaction))
-                {
-                    itensCommand.Parameters.AddWithValue("@id", id);
-                    await itensCommand.ExecuteNonQueryAsync();
-                }
-
-                await using (var command = new SqlCommand("DELETE FROM Orcamento WHERE idOrcamento = @id", connection, transaction))
-                {
-                    command.Parameters.AddWithValue("@id", id);
-                    await command.ExecuteNonQueryAsync();
-                }
-
-                await transaction.CommitAsync();
-            }
-            catch
-            {
-                await transaction.RollbackAsync();
-                throw;
-            }
-        }
-
         public async Task<IEnumerable<OrcamentosViewModel>> GetByChaveCliente(string chaveAcesso)
         {
             var orcamentos = new List<OrcamentosViewModel>();
@@ -106,6 +78,18 @@ namespace AfReparosAutomotivos.Repositories
             {
                 query += " AND pc.nome LIKE @nome";
                 parameters.Add(new SqlParameter("@nome", "%" + filtros.nome + "%"));
+            }
+
+            if (!string.IsNullOrWhiteSpace(filtros.busca))
+            {
+                query += " AND (" +
+                    "pc.nome LIKE @busca OR " +
+                    "CONVERT(VARCHAR(20), o.idOrcamento) LIKE @busca OR " +
+                    "CONVERT(VARCHAR(10), o.data_criacao, 23) LIKE @busca OR " +
+                    "CONVERT(VARCHAR(10), o.data_criacao, 103) LIKE @busca OR " +
+                    "CONVERT(VARCHAR(10), o.data_criacao, 105) LIKE @busca" +
+                    ")";
+                parameters.Add(new SqlParameter("@busca", "%" + filtros.busca.Trim() + "%"));
             }
 
             if (filtros.dataCriacao.HasValue)
@@ -189,6 +173,27 @@ namespace AfReparosAutomotivos.Repositories
             return orcamento;
         }
 
+        public async Task<bool> UpdateStatusByChaveCliente(int id, string chaveAcesso, int status)
+        {
+            if (string.IsNullOrWhiteSpace(chaveAcesso) || status is < 1 or > 5)
+            {
+                return false;
+            }
+
+            await using var connection = CreateConnection();
+            await connection.OpenAsync();
+            await using var command = new SqlCommand(
+                "UPDATE o SET statusOrc = @status " +
+                "FROM Orcamento o INNER JOIN Cliente c ON c.idCliente = o.clienteId " +
+                "WHERE o.idOrcamento = @id AND c.chaveCli = @chaveAcesso AND o.statusOrc = 1",
+                connection);
+            command.Parameters.AddWithValue("@id", id);
+            command.Parameters.AddWithValue("@chaveAcesso", chaveAcesso.Trim());
+            command.Parameters.AddWithValue("@status", status);
+
+            return await command.ExecuteNonQueryAsync() > 0;
+        }
+
         public async Task Update(OrcamentosViewModel orcamento)
         {
             await using var connection = CreateConnection();
@@ -209,7 +214,7 @@ namespace AfReparosAutomotivos.Repositories
             "SELECT o.idOrcamento, o.clienteId, o.funcionarioId, o.veiculoId, o.data_criacao, o.data_entrega, " +
             "o.statusOrc, o.total, o.forma_pgto, o.parcelas, pc.nome AS nomeCliente, pf.nome AS nomeFuncionario, " +
             "pc.documento, COALESCE(c.telefone, pc.celular), COALESCE(e.logradouro + ', ' + e.cidade + ' - ' + e.estado + ', ' + e.CEP, '') AS endereco, " +
-            "v.placa, v.marca, v.modelo " +
+            "v.placa, v.marca, v.modelo, v.cor, v.ano " +
             "FROM Orcamento o " +
             "INNER JOIN Cliente c ON c.idCliente = o.clienteId " +
             "INNER JOIN Pessoa pc ON pc.idPessoa = c.idCliente " +
@@ -237,7 +242,9 @@ namespace AfReparosAutomotivos.Repositories
             EnderecoCli = reader.GetString(14),
             Placa = reader.GetString(15),
             Marca = reader.GetString(16),
-            Modelo = reader.GetString(17)
+            Modelo = reader.GetString(17),
+            Cor = reader.GetString(18),
+            Ano = reader.GetInt32(19)
         };
     }
 }

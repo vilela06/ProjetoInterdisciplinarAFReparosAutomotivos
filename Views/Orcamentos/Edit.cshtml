@@ -39,9 +39,11 @@
                         <div class="col-md-6">
                             <label asp-for="status" class="form-label fw-semibold">Status</label>
                             <select asp-for="status" class="form-control">
-                                <option value="1">1 - Em Aberto</option>
-                                <option value="2">2 - Pago</option>
-                                <option value="3">3 - Cancelado</option>
+                                <option value="1">1 - Em analise</option>
+                                <option value="2">2 - Aprovado</option>
+                                <option value="3">3 - Recusado</option>
+                                <option value="4">4 - Sendo executado</option>
+                                <option value="5">5 - Finalizado</option>
                             </select>
                             <span asp-validation-for="status" class="text-danger"></span>
                         </div>

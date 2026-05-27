@@ -12,5 +12,7 @@ namespace AfReparosAutomotivos.Models
         public string placa { get; set; } = string.Empty;
         public string marca { get; set; } = string.Empty;
         public string modelo { get; set; } = string.Empty;
+        public string cor { get; set; } = string.Empty;
+        public int ano { get; set; }
     }
 }

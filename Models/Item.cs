@@ -45,6 +45,7 @@ namespace AfReparosAutomotivos.Models
         public int idItem { get; set; }
         public int idVeiculo { get; set; }
         public int qtd { get; set; } = 1;
+        public int qtdPeca { get; set; } = 1;
         public string? descricao { get; set; }
         public decimal? taxa { get; set; } = 0m;
     }

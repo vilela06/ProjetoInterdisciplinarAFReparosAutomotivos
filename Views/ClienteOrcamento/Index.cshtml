@@ -22,31 +22,64 @@
             </div>
         </form>
 
+        @if (TempData["ClienteOrcamentoMensagem"] is string mensagem)
+        {
+            <div class="alert alert-info mt-3" role="alert">@mensagem</div>
+        }
+
         <div class="client-budget-table-wrap">
             <table class="client-budget-table">
+                <thead>
+                    <tr>
+                        <th>Orcamento</th>
+                        <th>Cliente</th>
+                        <th>Veiculo</th>
+                        <th>Data</th>
+                        <th>Status</th>
+                        <th>Ações</th>
+                    </tr>
+                </thead>
                 <tbody>
                     @if (Model.Orcamentos.Any())
                     {
                         foreach (var orcamento in Model.Orcamentos)
                         {
+                            var statusTexto = orcamento.status switch
+                            {
+                                2 => "Aprovado",
+                                3 => "Recusado",
+                                4 => "Sendo executado",
+                                5 => "Finalizado",
+                                _ => "Em analise"
+                            };
+
                             <tr>
                                 <td>@orcamento.idOrcamento</td>
                                 <td>@orcamento.nome</td>
                                 <td>@(!string.IsNullOrWhiteSpace(orcamento.Modelo) ? orcamento.Modelo : "Descricao...")</td>
                                 <td>@(orcamento.dataEntrega?.ToString("dd-MM-yyyy") ?? orcamento.dataCriacao.ToString("dd-MM-yyyy"))</td>
+                                <td>@statusTexto</td>
+                                <td class="client-budget-actions">
+                                    <a asp-action="ClienteOrcamentoDetalhes"
+                                       asp-route-id="@orcamento.idOrcamento"
+                                       asp-route-chave="@Model.ChaveAcesso"
+                                       class="btn btn-sm btn-outline-primary">
+                                        Ver
+                                    </a>
+                                </td>
                             </tr>
                         }
                     }
                     else if (Model.PesquisaRealizada)
                     {
                         <tr>
-                            <td colspan="4" class="client-empty-row">Nenhum orcamento encontrado.</td>
+                            <td colspan="6" class="client-empty-row">Nenhum orcamento encontrado.</td>
                         </tr>
                     }
                     else
                     {
                         <tr>
-                            <td colspan="4" class="client-empty-row">Informe sua chave para consultar os orcamentos.</td>
+                            <td colspan="6" class="client-empty-row">Informe sua chave para consultar os orcamentos.</td>
                         </tr>
                     }
                 </tbody>

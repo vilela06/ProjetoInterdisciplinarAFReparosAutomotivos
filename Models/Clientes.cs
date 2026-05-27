@@ -17,7 +17,7 @@ namespace AfReparosAutomotivos.Models
 
         [Display(Name = "Telefone")]
         [StringLength(14)]
-        public string telefone { get; set; } = string.Empty;
+        public string? telefone { get; set; }
 
         [Display(Name = "Celular")]
         [Required(ErrorMessage = "Informe o celular.")]

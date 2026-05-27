@@ -4,32 +4,38 @@
     ViewData["Title"] = "Lista de Serviços";
 }
 
-<table class="table table-striped">
-    <thead>
-        <tr class="table-primary">
-            <th class="text-left fw-semibold" scope="col">@Html.DisplayNameFor(model => model.First().IdServico)</th>
-            <th class="text-left fw-semibold" scope="col">@Html.DisplayNameFor(model => model.First().Descricao)</th>
-            <th class="text-left fw-semibold" scope="col">@Html.DisplayNameFor(model => model.First().PrecoBase)</th>
-            <th class="text-left fw-semibold" scope="col">@Html.DisplayNameFor(model => model.First().FuncionarioResponsavel)</th>
-            <th class="text-left fw-semibold" scope="col">@Html.DisplayNameFor(model => model.First().Status)</th>
-            <th class="text-end fw-semibold" scope="col">Ações</th>
-        </tr>
-    </thead>
-    <tbody>
-        @foreach (var item in Model)
-        {
-            <tr>
-                <td>@Html.DisplayFor(modelItem => item.IdServico)</td>
-                <td>@Html.DisplayFor(modelItem => item.Descricao)</td>
-                <td>@item.PrecoBase.ToString("C")</td>
-                <td>@Html.DisplayFor(modelItem => item.FuncionarioResponsavel)</td>
-                <td>@Html.DisplayFor(modelItem => item.Status)</td>
-                <td class="d-flex align-middle justify-content-end gap-2">
-                    <a asp-action="Details" asp-route-id="@item.IdServico" class="btn btn-sm" title="Ver">
-                        <i class="fas fa-eye"></i>
-                    </a>
-                </td>
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h3 class="mb-0">Serviços</h3>
+    </div>
+
+    <table class="table table-striped table-hover rounded-3 overflow-hidden shadow-sm">
+        <thead>
+            <tr class="table-primary">
+                <th class="text-left fw-semibold" scope="col">@Html.DisplayNameFor(model => model.First().IdServico)</th>
+                <th class="text-left fw-semibold" scope="col">@Html.DisplayNameFor(model => model.First().Descricao)</th>
+                <th class="text-left fw-semibold" scope="col">@Html.DisplayNameFor(model => model.First().PrecoBase)</th>
+                <th class="text-left fw-semibold" scope="col">@Html.DisplayNameFor(model => model.First().FuncionarioResponsavel)</th>
+                <th class="text-left fw-semibold" scope="col">@Html.DisplayNameFor(model => model.First().Status)</th>
+                <th class="text-end fw-semibold" scope="col">Ações</th>
             </tr>
-        }
-    </tbody>
-</table>
+        </thead>
+        <tbody>
+            @foreach (var item in Model)
+            {
+                <tr>
+                    <td>@Html.DisplayFor(modelItem => item.IdServico)</td>
+                    <td>@Html.DisplayFor(modelItem => item.Descricao)</td>
+                    <td>@item.PrecoBase.ToString("C")</td>
+                    <td>@Html.DisplayFor(modelItem => item.FuncionarioResponsavel)</td>
+                    <td>@Html.DisplayFor(modelItem => item.Status)</td>
+                    <td class="d-flex align-middle justify-content-end gap-2">
+                        <a asp-action="Details" asp-route-id="@item.IdServico" class="btn btn-sm" title="Ver">
+                            <i class="fas fa-eye"></i>
+                        </a>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>

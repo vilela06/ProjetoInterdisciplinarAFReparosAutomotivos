@@ -2,27 +2,40 @@
 
 @{
     ViewData["Title"] = "Lista de Orçamentos";
-    var currentNome = Context.Request.Query["nome"].ToString();
+    var currentBusca = Context.Request.Query["busca"].ToString();
     var currentStatus = Context.Request.Query["statusId"].ToString();
 }
 
 <section class="af-admin-budget-screen">
     <div class="af-admin-toolbar">
         <form method="get" asp-action="Index" class="af-admin-filter">
-            <select name="nome" aria-label="Selecione o cliente">
-                <option value="">Selecione o cliente...</option>
-                @foreach (var nome in Model.Select(o => o.nome).Where(n => !string.IsNullOrWhiteSpace(n)).Distinct())
-                {
-                    <option value="@nome" selected="@(currentNome == nome)">@nome</option>
-                }
+            @if (!string.IsNullOrWhiteSpace(currentBusca))
+            {
+                <input type="hidden" name="busca" value="@currentBusca" />
+            }
+            <select name="statusId" aria-label="Selecione o status" onchange="this.form.submit()">
+                <option value="">Selecione o status...</option>
+                <option value="1" selected="@(currentStatus == "1")">Em analise</option>
+                <option value="2" selected="@(currentStatus == "2")">Aprovado</option>
+                <option value="3" selected="@(currentStatus == "3")">Recusado</option>
+                <option value="4" selected="@(currentStatus == "4")">Sendo executado</option>
+                <option value="5" selected="@(currentStatus == "5")">Finalizado</option>
             </select>
-            <button type="submit" aria-label="Filtrar cliente">
-                <i class="fas fa-chevron-down"></i>
-            </button>
+            <a asp-action="Index"
+               asp-route-busca="@currentBusca"
+               class="af-filter-clear"
+               title="Limpar filtro de status"
+               aria-label="Limpar filtro de status">
+                <i class="fas fa-times"></i>
+            </a>
         </form>
 
         <form method="get" asp-action="Index" class="af-admin-search">
-            <input type="text" name="nome" value="@currentNome" placeholder="Pesquisar..." />
+            @if (!string.IsNullOrWhiteSpace(currentStatus))
+            {
+                <input type="hidden" name="statusId" value="@currentStatus" />
+            }
+            <input type="text" name="busca" value="@currentBusca" placeholder="Pesquisar nome, id ou data..." />
             <button type="submit" aria-label="Pesquisar">
                 <i class="fas fa-search"></i>
             </button>
@@ -36,8 +49,11 @@
             {
                 var statusClass = item.status switch
                 {
-                    1 => "af-status-green",
-                    2 => "af-status-blue",
+                    1 => "af-status-gray",
+                    2 => "af-status-green",
+                    3 => "af-status-red",
+                    4 => "af-status-blue",
+                    5 => "af-status-dark",
                     _ => "af-status-gray"
                 };
 
@@ -102,9 +118,11 @@
             <i class="fas fa-times"></i>
         </button>
         <p>Selecione o status...</p>
-        <div><span class="af-status-dot af-status-green"></span> aprovado/aceito pelo cliente</div>
-        <div><span class="af-status-dot af-status-blue"></span> aprovado e sendo executado</div>
-        <div><span class="af-status-dot af-status-gray"></span> não aprovado ainda</div>
+        <div><span class="af-status-dot af-status-gray"></span> em analise</div>
+        <div><span class="af-status-dot af-status-green"></span> aprovado</div>
+        <div><span class="af-status-dot af-status-red"></span> recusado</div>
+        <div><span class="af-status-dot af-status-blue"></span> sendo executado</div>
+        <div><span class="af-status-dot af-status-dark"></span> finalizado</div>
     </div>
 
     <a asp-action="Create" class="af-floating-add" aria-label="Criar orçamento">
@@ -114,18 +132,58 @@
 
 @section Scripts {
     <script>
+        function closeActionMenus(exceptId) {
+            document.querySelectorAll('.af-action-popover').forEach(menu => {
+                if (!exceptId || menu.id !== `action-menu-${exceptId}`) {
+                    menu.classList.remove('is-open');
+                }
+            });
+        }
+
+        function positionActionMenu(button, menu) {
+            const rect = button.getBoundingClientRect();
+            const spacing = 8;
+
+            menu.style.visibility = 'hidden';
+            menu.classList.add('is-open');
+
+            const menuRect = menu.getBoundingClientRect();
+            const availableBelow = window.innerHeight - rect.bottom;
+            const top = availableBelow >= menuRect.height + spacing
+                ? rect.bottom + spacing
+                : Math.max(spacing, rect.top - menuRect.height - spacing);
+
+            const left = Math.min(
+                window.innerWidth - menuRect.width - spacing,
+                Math.max(spacing, rect.right - menuRect.width)
+            );
+
+            menu.style.top = `${top}px`;
+            menu.style.left = `${left}px`;
+            menu.style.visibility = '';
+        }
+
         document.querySelectorAll('[data-action-menu]').forEach(button => {
-            button.addEventListener('click', () => {
+            button.addEventListener('click', (event) => {
+                event.stopPropagation();
                 const id = button.getAttribute('data-action-menu');
-                document.querySelectorAll('.af-action-popover').forEach(menu => {
-                    if (menu.id !== `action-menu-${id}`) menu.classList.remove('is-open');
-                });
-                document.getElementById(`action-menu-${id}`)?.classList.toggle('is-open');
+                const menu = document.getElementById(`action-menu-${id}`);
+                const willOpen = !menu?.classList.contains('is-open');
+
+                closeActionMenus(id);
+
+                if (menu && willOpen) {
+                    positionActionMenu(button, menu);
+                } else {
+                    menu?.classList.remove('is-open');
+                }
             });
         });
 
         document.querySelectorAll('[data-delete-open]').forEach(button => {
-            button.addEventListener('click', () => {
+            button.addEventListener('click', (event) => {
+                event.stopPropagation();
+                closeActionMenus();
                 document.getElementById(`delete-modal-${button.getAttribute('data-delete-open')}`)?.classList.add('is-open');
             });
         });
@@ -143,5 +201,10 @@
         document.getElementById('statusHelpClose')?.addEventListener('click', () => {
             document.getElementById('statusHelpModal')?.classList.remove('is-open');
         });
+
+        document.addEventListener('click', () => closeActionMenus());
+
+        window.addEventListener('scroll', () => closeActionMenus(), true);
+        window.addEventListener('resize', () => closeActionMenus());
     </script>
 }

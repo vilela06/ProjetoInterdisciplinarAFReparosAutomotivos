@@ -46,6 +46,7 @@ namespace AfReparosAutomotivos.Models
         }
 
         [Display(Name = "Status")]
+        [Range(1, 5, ErrorMessage = "Informe um status valido.")]
         public int status { get; set; }
 
         public int statusOrc

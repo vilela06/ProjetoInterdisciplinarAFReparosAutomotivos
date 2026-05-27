@@ -53,7 +53,9 @@ CREATE TABLE Veiculo
 	clienteId		INT				NOT NULL	REFERENCES Cliente(idCliente),
 	marca			VARCHAR(50)		NOT NULL,
 	placa			VARCHAR(7)		NOT NULL	UNIQUE,
-	modelo			VARCHAR(50)		NOT NULL
+	modelo			VARCHAR(50)		NOT NULL,
+	cor				VARCHAR(20)		NOT NULL,
+	ano				INT				NOT NULL	CHECK	(ano >= 1886 AND ano <= YEAR(GETDATE()) + 1) -- O primeiro carro foi inventado em 1886
 )
 GO
 
@@ -85,7 +87,7 @@ CREATE TABLE Orcamento
 	veiculoId		INT				NOT NULL	REFERENCES	Veiculo(idVeiculo),
 	data_criacao	DATETIME		NOT NULL,
 	data_entrega	DATETIME		NULL,
-	statusOrc		INT				NOT NULL	DEFAULT		1								CHECK	(statusOrc		in	(1, 2, 3)), -- Em aberto, pago ou cancelado
+	statusOrc		INT				NOT NULL	DEFAULT		1								CHECK	(statusOrc		in	(1, 2, 3, 4 ,5)), -- Em analise, aprovado, recusado, sendo executado, finalizado
 	total			DECIMAL(10, 2)	NOT NULL	CHECK		(total >= 0),
 	forma_pgto		VARCHAR(20)		NULL,
 	parcelas		INT				NULL

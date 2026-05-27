@@ -8,6 +8,8 @@ namespace AfReparosAutomotivos.Models
 
         public string? nome { get; set; }
 
+        public string? busca { get; set; }
+
         public DateTime? dataCriacao { get; set; }
 
         public DateTime? dataEntrega { get; set; }

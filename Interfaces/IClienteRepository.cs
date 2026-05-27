@@ -6,8 +6,8 @@ namespace AfReparosAutomotivos.Interfaces
     {
         Task<int> Add(Clientes cliente);
         Task<IEnumerable<Clientes>> GetAllAsync();
+        Task<IEnumerable<Clientes>> Search(string termo);
         Task<Clientes?> GetId(int id);
-        Task<Clientes?> GetByDocumento(string documento);
         Task Update(Clientes cliente);
     }
 }

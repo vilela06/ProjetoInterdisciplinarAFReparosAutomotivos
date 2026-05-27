@@ -14,6 +14,12 @@
         }
     </div>
 
+    <form asp-action="Index" method="get" class="row g-2 align-items-center mb-3" id="pecaSearchForm">
+        <div class="col-md-5">
+            <input type="text" name="pesquisa" value="@ViewBag.Pesquisa" class="form-control" placeholder="Pesquisar..." id="pecaSearchInput" autocomplete="off" />
+        </div>
+    </form>
+
     <table class="table table-striped table-hover rounded-3 overflow-hidden shadow-sm">
         <thead>
             <tr class="table-primary">
@@ -48,3 +54,16 @@
         </tbody>
     </table>
 </div>
+
+@section Scripts {
+    <script>
+        const pecaSearchForm = document.getElementById('pecaSearchForm');
+        const pecaSearchInput = document.getElementById('pecaSearchInput');
+        let pecaSearchTimer;
+
+        pecaSearchInput?.addEventListener('input', () => {
+            clearTimeout(pecaSearchTimer);
+            pecaSearchTimer = setTimeout(() => pecaSearchForm.submit(), 350);
+        });
+    </script>
+}

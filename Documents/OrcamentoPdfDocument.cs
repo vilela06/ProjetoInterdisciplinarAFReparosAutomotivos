@@ -141,6 +141,12 @@ public class OrcamentoPdfDocument : IDocument
 
                     table.Cell().Text("Placa").Bold();
                     table.Cell().Text(placa);
+
+                    table.Cell().Text("Cor").Bold();
+                    table.Cell().Text(Veiculo?.cor ?? "-");
+
+                    table.Cell().Text("Ano").Bold();
+                    table.Cell().Text(Veiculo?.ano > 0 ? Veiculo.ano.ToString() : "-");
                 });
             }
         });

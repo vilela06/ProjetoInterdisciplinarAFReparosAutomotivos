@@ -8,3 +8,4 @@ obj/
 .vs/
 TestResults/
 App_Data/DataProtectionKeys/
+*.lscache

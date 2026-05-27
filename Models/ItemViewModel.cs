@@ -10,6 +10,7 @@ namespace AfReparosAutomotivos.Models
         [Display(Name = "Servico")]
         public int idServico { get; set; }
 
+        [Required(ErrorMessage = "Informe o servico.")]
         public string? novoServicoDescricao { get; set; }
 
         [Required]
@@ -26,11 +27,12 @@ namespace AfReparosAutomotivos.Models
         [Range(1, int.MaxValue)]
         public int qtdPeca { get; set; } = 1;
 
-        public decimal valorPeca { get; set; }
+        public decimal? valorPeca { get; set; }
 
         public DateTime? data_entrega { get; set; }
 
         [Display(Name = "Preco Base")]
+        [Range(0.01, double.MaxValue, ErrorMessage = "Informe o valor do servico.")]
         public decimal preco { get; set; }
 
         public string? descricao { get; set; }

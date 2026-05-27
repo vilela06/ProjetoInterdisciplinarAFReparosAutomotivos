@@ -6,6 +6,25 @@
 }
 
 <div class="container mt-5">
+    @if (TempData["AvisoClienteMensagem"] is string avisoMensagem)
+    {
+        <div class="alert alert-info d-flex justify-content-between align-items-center gap-3" role="alert">
+            <span>@avisoMensagem</span>
+            @if (TempData["AvisoClienteUrl"] is string avisoUrl)
+            {
+                <a href="@avisoUrl" target="_blank" rel="noopener" class="btn btn-success btn-sm">
+                    Enviar celular
+                </a>
+            }
+            @if (TempData["AvisoClienteEmailUrl"] is string avisoEmailUrl)
+            {
+                <a href="@avisoEmailUrl" class="btn btn-primary btn-sm">
+                    Enviar e-mail
+                </a>
+            }
+        </div>
+    }
+
     <div class="card shadow-lg rounded-4 border-0">
         <div class="card-header text-white text-center rounded-top-4" style="background-color: @customHeaderColor">
             <h3 class="mb-0">Detalhes do Orcamento</h3>
@@ -32,9 +51,11 @@
                         @{
                             var statusText = Model.status switch
                             {
-                                1 => "Aberto",
-                                2 => "Pago",
-                                3 => "Cancelado",
+                                1 => "Em analise",
+                                2 => "Aprovado",
+                                3 => "Recusado",
+                                4 => "Sendo executado",
+                                5 => "Finalizado",
                                 _ => $"Desconhecido ({Model.status})"
                             };
                         }
@@ -80,6 +101,12 @@
 
                     <dt class="col-sm-4 fw-semibold">Modelo</dt>
                     <dd class="col-sm-8">@Model.Modelo</dd>
+
+                    <dt class="col-sm-4 fw-semibold">Cor</dt>
+                    <dd class="col-sm-8">@Model.Cor</dd>
+
+                    <dt class="col-sm-4 fw-semibold">Ano</dt>
+                    <dd class="col-sm-8">@Model.Ano</dd>
                 </dl>
             </fieldset>
 
