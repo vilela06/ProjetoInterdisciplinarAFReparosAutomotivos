@@ -91,9 +91,11 @@
             <label>CEP:<span class="af-required">*</span><input id="cepCliente" maxlength="9" required /></label>
         </div>
 
-        <button type="button" class="af-create-next" id="goServico" aria-label="Proxima etapa">
-            <i class="fas fa-arrow-right"></i>
-        </button>
+        <div class="af-create-footer af-create-footer-end">
+            <button type="button" class="af-create-next" id="goServico">
+                Próximo <i class="fas fa-arrow-right"></i>
+            </button>
+        </div>
     </section>
 
     <section class="af-create-panel" id="stepServico">
@@ -131,7 +133,6 @@
                         </button>
                     </div>
 
-                    <label>Qtd.<span class="af-required">*</span><input asp-for="ServicosAssociados[j].qtd" type="number" min="1" required data-total-field /></label>
                     <label class="af-service-description">Serviço<span class="af-required">*</span>
                         <input asp-for="ServicosAssociados[j].novoServicoDescricao" list="servicos-list" maxlength="50" required data-service-name data-total-field />
                         <input asp-for="ServicosAssociados[j].idServico" type="hidden" value="0" data-service-id />
@@ -141,6 +142,7 @@
                             <option value="">Selecione...</option>
                         </select>
                     </label>
+                    <label>Qtd.<span class="af-required">*</span><input asp-for="ServicosAssociados[j].qtd" type="number" min="1" required data-total-field /></label>
                     <label>Valor<span class="af-required">*</span><input asp-for="ServicosAssociados[j].preco" type="number" step="0.01" min="0" required data-service-price data-total-field /></label>
 
                     <div class="af-piece-row">
@@ -161,24 +163,20 @@
             }
         </div>
 
-        <div class="af-add-service-block">
-            <span>Quais tipos de serviço?</span>
-            <button type="button" id="btnAdicionarServico"><i class="fas fa-plus"></i> Adicionar</button>
-        </div>
-
-        <button type="button" class="af-create-back" id="goCadastro" aria-label="Voltar">
-            <i class="fas fa-arrow-left"></i>
-        </button>
-
-        <div class="af-create-total">
-            <span>Total</span>
-            <input type="text" id="orcamentoTotal" value="R$ 0,00" readonly />
-        </div>
-
-        <div class="af-create-submit-actions">
-            <button type="submit" name="acao" value="gerar">
-                <i class="fas fa-check"></i>
-                <span>Salvar e Enviar</span>
+        <div class="af-create-footer">
+            <button type="button" class="af-create-back" id="goCadastro">
+                <i class="fas fa-arrow-left"></i> Voltar
+            </button>
+            <div class="af-footer-spacer"></div>
+            <button type="button" class="af-create-add-svc" id="btnAdicionarServico">
+                <i class="fas fa-plus"></i> Adicionar serviço
+            </button>
+            <div class="af-create-total">
+                <span>Total</span>
+                <input type="text" id="orcamentoTotal" value="R$ 0,00" readonly />
+            </div>
+            <button type="submit" class="af-create-save" name="acao" value="gerar">
+                <i class="fas fa-check"></i> Salvar e Enviar
             </button>
         </div>
     </section>
@@ -434,7 +432,6 @@
                             <i class="fas fa-trash"></i>
                         </button>
                     </div>
-                    <label>Qtd.<span class="af-required">*</span><input name="ServicosAssociados[${index}].qtd" type="number" min="1" value="1" required data-total-field /></label>
                     <label class="af-service-description">Serviço<span class="af-required">*</span>
                         <input name="ServicosAssociados[${index}].novoServicoDescricao" list="servicos-list" maxlength="50" required data-service-name data-total-field />
                         <input name="ServicosAssociados[${index}].idServico" type="hidden" value="0" data-service-id />
@@ -442,6 +439,7 @@
                     <label>Funcionário<span class="af-required">*</span>
                         <select name="ServicosAssociados[${index}].funcionarioId" required>${optionHtml(funcionariosDisponiveisOptionsData, 'Selecione...')}</select>
                     </label>
+                    <label>Qtd.<span class="af-required">*</span><input name="ServicosAssociados[${index}].qtd" type="number" min="1" value="1" required data-total-field /></label>
                     <label>Valor<span class="af-required">*</span><input name="ServicosAssociados[${index}].preco" type="number" step="0.01" min="0" required data-service-price data-total-field /></label>
                     <div class="af-piece-row">
                         <label>Peça<span class="af-required">*</span><select name="ServicosAssociados[${index}].pecaId" data-piece-select data-total-field>${optionHtml(pecasDisponiveisOptionsData, 'Selecione a peça...')}</select></label>
