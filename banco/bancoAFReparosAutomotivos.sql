@@ -6,24 +6,36 @@ GO
 
 CREATE TABLE Pessoa
 (
-	idPessoa		INT				NOT NULL	PRIMARY KEY	IDENTITY,
+	idPessoa		INT				NOT NULL	IDENTITY	PRIMARY KEY,
 	nome			VARCHAR(50)		NOT NULL,
 	celular			VARCHAR(15)		NOT NULL,
 	documento		VARCHAR(18)		NOT NULL	UNIQUE,
-	tipo_doc		CHAR			NOT NULL							CHECK	(tipo_doc in ('F', 'J'))
+	tipo_doc		CHAR			NOT NULL	CHECK	(tipo_doc in ('F', 'J'))
 )
 GO
 
 CREATE TABLE Endereco
 (
-    pessoaId		INT				NOT NULL	PRIMARY KEY,
+    idEndereco		INT				NOT NULL	IDENTITY	PRIMARY KEY,
+	pessoaId		INT				NOT NULL	UNIQUE		REFERENCES	Pessoa(idPessoa),
     logradouro		VARCHAR(150)	NOT NULL,
 	numero			VARCHAR(5)		NOT NULL,
     cidade			VARCHAR(100)	NOT NULL,
     estado			VARCHAR(2)		NOT NULL,
-	CEP				VARCHAR(9)		NOT NULL,
+	CEP				VARCHAR(9)		NOT NULL
+)
+GO
 
-    FOREIGN KEY (pessoaId) REFERENCES Pessoa(idPessoa) ON DELETE CASCADE
+CREATE TABLE HistoricoEndereco 
+(
+    idHistorico		INT				NOT NULL	IDENTITY	PRIMARY KEY,
+    pessoaId		INT				NOT NULL	REFERENCES	Pessoa(idPessoa),
+    logradouro		VARCHAR(150)	NOT NULL,
+    Numero			VARCHAR(5)		NOT NULL,
+	cidade			VARCHAR(100)	NOT NULL,
+	estado			VARCHAR(2)		NOT NULL,
+    CEP				VARCHAR(9)		NOT NULL,
+	DataFim			DATETIME		DEFAULT GETDATE()
 )
 GO
 
@@ -63,8 +75,8 @@ CREATE TABLE Peca
 (
 	idPeca			INT				NOT NULL	PRIMARY KEY	IDENTITY,
 	nome			VARCHAR(20)		NOT NULL,
-	valor			MONEY			NOT NULL,
-	qtdEsto			INT				NOT NULL
+	valor			MONEY			NOT NULL	CHECK		(valor >= 0),
+	qtdEsto			INT				NOT NULL	CHECK		(qtdEsto >= 0)
 )
 GO
 
@@ -73,8 +85,8 @@ CREATE TABLE Compra
 	idCompra		INT				NOT NULL	PRIMARY KEY	IDENTITY,
 	funcionarioId	INT				NOT NULL	REFERENCES	Funcionario(idFuncionario),
 	pecaId			INT				NOT NULL	REFERENCES	Peca(idPeca),
-	qtd				INT				NOT NULL,
-	preco			MONEY			NOT NULL,
+	qtd				INT				NOT NULL	CHECK		(qtd >= 0),
+	preco			MONEY			NOT NULL	CHECK		(preco >= 0),
 	dataComp		DATETIME		NOT NULL
 )
 GO
@@ -100,7 +112,7 @@ CREATE TABLE Servico
 (
 	idServico		INT				NOT NULL	PRIMARY KEY	IDENTITY,
 	descricao		VARCHAR(50)		NOT NULL,
-	valorBase		MONEY			NOT NULL
+	valorBase		MONEY			NOT NULL	CHECK		(valorBase >= 0)
 	
 )
 GO
@@ -111,8 +123,10 @@ CREATE TABLE Itens
 	servicoId		INT				NOT NULL	REFERENCES Servico(idServico),
 	funcionarioID	INT				NOT NULL	REFERENCES Funcionario(idFuncionario),
 	pecaId			INT				NULL		REFERENCES Peca(idPeca),
-	preco			MONEY			NOT NULL,
-	desconto		MONEY			NULL,
+	qtd				INT				NOT NULL	DEFAULT		1		CHECK		(qtd >= 0),
+	preco			MONEY			NOT NULL	CHECK		(preco >= 0),
+	desconto		DECIMAL			NULL,
+	taxa			DECIMAL			NULL,
 	dataEntrega		DATETIME		NULL,
 	PRIMARY KEY(orcamentoId,servicoId)
 )

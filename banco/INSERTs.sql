@@ -56,8 +56,8 @@ GO
 -- Herança: Pessoas que são Funcionários
 INSERT INTO Funcionario (idFuncionario, permissao, usuario, senha, statusFunc)
 VALUES
-(1, 1, 'SuperAdmin', 'super123', 1),
-(2, 1, 'admin', 'admin123', 1),
+(1, 1, 'SuperAdmin', '123', 1),
+(2, 1, 'admin', '123456', 1),
 (3, 2, 'joaopedro', 'joao123', 1),
 (4, 2, 'anaclara', 'ana123', 1),
 (5, 2, 'lucasgabriel', 'lucas123', 1),
@@ -84,18 +84,18 @@ VALUES
 GO
 
 -- Veículos necessários para os orçamentos
-INSERT INTO Veiculo(clienteId, marca, placa, modelo, cor, ano)
+INSERT INTO Veiculo (clienteId, marca, placa, modelo, cor, ano)
 VALUES
-(9, 'Toyota', 'ABC1234', 'Corolla', 'Prata', 2020),
-(9, 'Honda', 'DEF5678', 'Civic', 'Preto', 2019),
-(9, 'Chevrolet', 'GHI9012', 'Onix', 'Branco', 2021),
-(9, 'Volkswagen', 'JKL3456', 'Golf', 'Cinza', 2018),
-(9, 'Fiat', 'MNO7890', 'Argo', 'Vermelho', 2022),
-(10, 'Hyundai', 'PQR1234', 'HB20', 'Branco', 2020),
-(12, 'Ford', 'STU5678', 'Ka', 'Prata', 2017),
-(13, 'Jeep', 'VWX9012', 'Renegade', 'Preto', 2021),
+(9, 'Toyota', 'ABC1234', 'Corolla', 'Prata', 2022),
+(9, 'Honda', 'DEF5678', 'Civic', 'Preto', 2021),
+(9, 'Chevrolet', 'GHI9012', 'Onix', 'Branco', 2023),
+(9, 'Volkswagen', 'JKL3456', 'Golf', 'Vermelho', 2019),
+(9, 'Fiat', 'MNO7890', 'Argo', 'Cinza', 2022),
+(10, 'Hyundai', 'PQR1234', 'HB20', 'Azul', 2020),
+(12, 'Ford', 'STU5678', 'Ka', 'Branco', 2018),
+(13, 'Jeep', 'VWX9012', 'Renegade', 'Verde', 2021),
 (15, 'Nissan', 'YZA3456', 'Kicks', 'Cinza', 2022),
-(18, 'Renault', 'BCD7890', 'Sandero', 'Branco', 2019)
+(18, 'Renault', 'BCD7890', 'Sandero', 'Prata', 2020);
 GO
 
 
@@ -103,17 +103,17 @@ GO
 INSERT INTO Orcamento(clienteId, funcionarioId, veiculoId, data_criacao, data_entrega, statusOrc, total, forma_pgto, parcelas)
 VALUES
 -- CLIENTE 9 
--- 3 aprovados MAIS ANTIGOS
+-- 3 pagos MAIS ANTIGOS
 (9, 3, 1, '2025-01-10 09:00:00', '2025-01-15 17:00:00', 2, 1850.00, 'Cartão', 3),
 
 (9, 4, 2, '2025-02-05 10:30:00', '2025-02-10 16:00:00', 2, 920.00, 'Pix', 1),
 
 (9, 5, 3, '2025-03-12 14:00:00', '2025-03-18 11:00:00', 2, 3100.00, 'Boleto', 5),
 
--- 1 recusado
+-- 1 cancelado
 (9, 3, 4, '2025-04-20 08:00:00', NULL, 3, 760.00, NULL, NULL),
 
--- 1 em analise MAIS NOVO
+-- 1 em aberto MAIS NOVO
 (9, 4, 5, '2026-05-10 15:30:00', NULL, 1, 2450.00, NULL, NULL),
 
 
@@ -148,7 +148,7 @@ GO
 -- 1 serviço distinto para cada orçamento
 INSERT INTO Itens(orcamentoId, servicoId, funcionarioID, pecaId, preco, desconto, dataEntrega)
 VALUES
-(1, 11, 3, NULL, 850.00, 50.00, '2025-01-15 17:00:00'),
+(1, 1, 3, NULL, 850.00, 50.00, '2025-01-15 17:00:00'),
 (2, 2, 4, NULL, 2500.00, 100.00, '2025-02-10 16:00:00'),
 (3, 3, 5, NULL, 1200.00, NULL, '2025-03-18 11:00:00'),
 (4, 4, 3, NULL, 450.00, NULL, NULL),

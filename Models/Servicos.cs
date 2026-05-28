@@ -7,6 +7,9 @@ namespace AfReparosAutomotivos.Models
         [Display(Name = "ID do Servico")]
         public int IdServico { get; set; }
 
+        [Display(Name = "ID do Orcamento")]
+        public int? IdOrcamento { get; set; }
+
         [Display(Name = "Descricao")]
         [StringLength(50)]
         public string Descricao { get; set; } = string.Empty;

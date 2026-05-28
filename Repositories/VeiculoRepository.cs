@@ -55,6 +55,15 @@ namespace AfReparosAutomotivos.Repositories
             return veiculos;
         }
 
+        public async Task DeleteCreated(int id)
+        {
+            await using var connection = CreateConnection();
+            await connection.OpenAsync();
+            await using var command = new SqlCommand("DELETE FROM Veiculo WHERE idVeiculo = @id", connection);
+            command.Parameters.AddWithValue("@id", id);
+            await command.ExecuteNonQueryAsync();
+        }
+
         private static Veiculos Map(SqlDataReader reader) => new()
         {
             id = reader.GetInt32(0),

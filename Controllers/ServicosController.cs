@@ -15,10 +15,14 @@ public class ServicosController : Controller
     }
 
     [HttpGet]
-    public async Task<IActionResult> Index()
+    public async Task<IActionResult> Index(string? pesquisa)
     {
-        var servicos = await _servicoRepository.Get();
-        return View(servicos);
+        var servicos = string.IsNullOrWhiteSpace(pesquisa)
+            ? await _servicoRepository.Get()
+            : await _servicoRepository.Search(pesquisa);
+
+        ViewBag.Pesquisa = pesquisa ?? string.Empty;
+        return View(servicos.ToList());
     }
 
     [HttpGet]

@@ -1,0 +1,11 @@
+@model AfReparosAutomotivos.Models.Funcionarios
+
+@{
+    ViewData["Title"] = "Novo Funcionário";
+}
+
+<partial name="_FuncionarioForm" model="Model" />
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}

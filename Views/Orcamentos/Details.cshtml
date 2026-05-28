@@ -133,10 +133,7 @@
 
                             <dt class="col-sm-4 fw-semibold">Preco Servico</dt>
                             <dd class="col-sm-8">
-                                @{
-                                    decimal precoFinal = (servico.preco * servico.qtd) * (1 + servico.taxa) - servico.desconto;
-                                }
-                                <span class="fw-bold">@precoFinal.ToString("C2")</span>
+                                <span class="fw-bold">@servico.preco.ToString("C2")</span>
                             </dd>
 
                             @if (!string.IsNullOrWhiteSpace(servico.observacao))
@@ -165,7 +162,3 @@
         </div>
     </div>
 </div>
-
-@section Scripts {
-    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
-}

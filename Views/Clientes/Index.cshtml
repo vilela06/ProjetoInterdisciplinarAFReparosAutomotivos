@@ -39,7 +39,7 @@
                     <th class="text-left fw-semibold" scope="col">E-mail</th>
                     <th class="text-left fw-semibold" scope="col">Chave</th>
                     <th class="text-left fw-semibold" scope="col">Endereço</th>
-                    <th class="text-left fw-semibold" scope="col">Ações</th>
+                    <th class="text-end fw-semibold" scope="col">Ações</th>
                 </tr>
             </thead>
             <tbody>
@@ -68,15 +68,16 @@
                             @Html.DisplayFor(modelItem => item.endereco)
                         </td>
                         
-                        <td class="d-flex align-middle gap-2">
-                            <a asp-action="Details" asp-route-id="@item.id" class="btn btn-sm btn-info text-white" title="Ver">
-                                <i class="fas fa-eye"></i>
-                            </a>
-                            
-                            <a asp-action="Edit" asp-route-id="@item.id" class="btn btn-sm btn-warning text-dark" title="Editar">
-                                <i class="fas fa-pencil-alt"></i>
-                            </a>
-                            
+                        <td class="text-end text-nowrap">
+                            <div class="d-inline-flex align-items-center gap-2">
+                                <a asp-action="Details" asp-route-id="@item.id" class="btn btn-sm btn-info text-white" title="Ver">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+
+                                <a asp-action="Edit" asp-route-id="@item.id" class="btn btn-sm btn-warning text-dark" title="Editar">
+                                    <i class="fas fa-pencil-alt"></i>
+                                </a>
+                            </div>
                         </td>
                     </tr>
                 }

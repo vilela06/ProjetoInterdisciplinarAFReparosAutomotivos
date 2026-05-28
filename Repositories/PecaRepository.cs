@@ -1,6 +1,7 @@
 using AfReparosAutomotivos.Interfaces;
 using AfReparosAutomotivos.Models;
 using Microsoft.Data.SqlClient;
+using System.Data;
 
 namespace AfReparosAutomotivos.Repositories
 {
@@ -23,7 +24,14 @@ namespace AfReparosAutomotivos.Repositories
 
         public async Task<IEnumerable<Pecas>> GetDisponiveis()
         {
-            return await Get("WHERE qtdEsto > 0");
+            try
+            {
+                return await ExecutePecaProcedure("SP_ListarPecasDisponiveis");
+            }
+            catch (SqlException)
+            {
+                return await Get("WHERE qtdEsto > 0");
+            }
         }
 
         public async Task<IEnumerable<Pecas>> GetAll()
@@ -33,20 +41,52 @@ namespace AfReparosAutomotivos.Repositories
 
         public async Task<IEnumerable<Pecas>> Search(string termo)
         {
-            if (string.IsNullOrWhiteSpace(termo))
+            try
             {
-                return await GetAll();
+                return await ExecutePecaProcedure("SP_BuscarPecas", termo);
             }
+            catch (SqlException)
+            {
+                if (string.IsNullOrWhiteSpace(termo))
+                {
+                    return await GetAll();
+                }
 
+                var pecas = new List<Pecas>();
+                await using var connection = CreateConnection();
+                await connection.OpenAsync();
+                await using var command = new SqlCommand(
+                    "SELECT idPeca, nome, valor, qtdEsto FROM Peca " +
+                    "WHERE nome LIKE @termo OR CONVERT(VARCHAR(20), idPeca) LIKE @termo " +
+                    "ORDER BY nome",
+                    connection);
+                command.Parameters.AddWithValue("@termo", $"%{termo.Trim()}%");
+                await using var reader = await command.ExecuteReaderAsync();
+                while (await reader.ReadAsync())
+                {
+                    pecas.Add(Map(reader));
+                }
+
+                return pecas;
+            }
+        }
+
+        private async Task<IEnumerable<Pecas>> ExecutePecaProcedure(string procedure, string? termo = null)
+        {
             var pecas = new List<Pecas>();
             await using var connection = CreateConnection();
             await connection.OpenAsync();
-            await using var command = new SqlCommand(
-                "SELECT idPeca, nome, valor, qtdEsto FROM Peca " +
-                "WHERE nome LIKE @termo OR CONVERT(VARCHAR(20), idPeca) LIKE @termo " +
-                "ORDER BY nome",
-                connection);
-            command.Parameters.AddWithValue("@termo", $"%{termo.Trim()}%");
+            await using var command = new SqlCommand(procedure, connection)
+            {
+                CommandType = CommandType.StoredProcedure
+            };
+
+            if (procedure == "SP_BuscarPecas")
+            {
+                command.Parameters.Add("@termo", SqlDbType.VarChar, 50).Value =
+                    string.IsNullOrWhiteSpace(termo) ? DBNull.Value : termo.Trim();
+            }
+
             await using var reader = await command.ExecuteReaderAsync();
             while (await reader.ReadAsync())
             {

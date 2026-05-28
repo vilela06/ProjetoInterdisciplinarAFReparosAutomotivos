@@ -134,6 +134,34 @@ namespace AfReparosAutomotivos.Repositories
             }
         }
 
+        public async Task DeleteCreated(int id)
+        {
+            await using var connection = CreateConnection();
+            await connection.OpenAsync();
+            await using var transaction = (SqlTransaction)await connection.BeginTransactionAsync();
+            try
+            {
+                await using (var clienteCommand = new SqlCommand("DELETE FROM Cliente WHERE idCliente = @id", connection, transaction))
+                {
+                    clienteCommand.Parameters.AddWithValue("@id", id);
+                    await clienteCommand.ExecuteNonQueryAsync();
+                }
+
+                await using (var pessoaCommand = new SqlCommand("DELETE FROM Pessoa WHERE idPessoa = @id", connection, transaction))
+                {
+                    pessoaCommand.Parameters.AddWithValue("@id", id);
+                    await pessoaCommand.ExecuteNonQueryAsync();
+                }
+
+                await transaction.CommitAsync();
+            }
+            catch
+            {
+                await transaction.RollbackAsync();
+                throw;
+            }
+        }
+
         private static string BaseSelect() =>
             "SELECT c.idCliente, p.nome, p.documento, c.telefone, p.celular, c.email, c.statusCli, c.chaveCli, p.tipo_doc, " +
             "COALESCE(e.logradouro + ', ' + e.numero + ', ' + e.cidade + ' - ' + e.estado + ', ' + e.CEP, '') AS endereco, " +

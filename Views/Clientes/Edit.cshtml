@@ -18,7 +18,7 @@
                 <div class="row g-3">
                     <div class="col-md-6">
                         <label asp-for="nome" class="form-label fw-semibold">Nome</label>
-                        <input asp-for="nome" type="text" class="form-control" value="@(Model?.nome)" required>
+                        <input asp-for="nome" type="text" class="form-control" value="@(Model?.nome)" pattern="^[^\d]+$" title="Nao use numeros no nome." required>
                         <span asp-validation-for="nome" class="text-danger"></span>
                     </div>
 
@@ -30,13 +30,13 @@
 
                     <div class="col-md-6">
                         <label asp-for="telefone" class="form-label fw-semibold">Telefone</label>
-                        <input asp-for="telefone" type="text" class="form-control" value="@(Model?.telefone)" maxlength="14">
+                        <input asp-for="telefone" type="text" class="form-control" value="@(Model?.telefone)" maxlength="14" inputmode="tel" pattern="^[0-9()\-\s]*$" title="Use apenas numeros, espacos, parenteses ou hifen.">
                         <span asp-validation-for="telefone" class="text-danger"></span>
                     </div>
 
                     <div class="col-md-6">
                         <label asp-for="celular" class="form-label fw-semibold">Celular <span class="text-danger">*</span></label>
-                        <input asp-for="celular" type="text" class="form-control" value="@(Model?.celular)" maxlength="15" required>
+                        <input asp-for="celular" type="text" class="form-control" value="@(Model?.celular)" maxlength="15" inputmode="tel" pattern="^[0-9()\-\s]+$" title="Use apenas numeros, espacos, parenteses ou hifen." required>
                         <span asp-validation-for="celular" class="text-danger"></span>
                     </div>
 
@@ -63,7 +63,7 @@
 
                     <div class="col-md-3">
                         <label asp-for="numero" class="form-label fw-semibold">Número</label>
-                        <input asp-for="numero" type="text" class="form-control" value="@(Model?.numero)" maxlength="5">
+                        <input asp-for="numero" type="text" class="form-control" value="@(Model?.numero)" maxlength="5" pattern="^(\d+|s/n|S/N)$" title="Use apenas numeros ou s/n.">
                     </div>
 
                     <div class="col-md-5">
@@ -73,12 +73,42 @@
 
                     <div class="col-md-2">
                         <label asp-for="estado" class="form-label fw-semibold">UF</label>
-                        <input asp-for="estado" type="text" class="form-control" value="@(Model?.estado)" maxlength="2">
+                        <select asp-for="estado" class="form-control">
+                            <option value="">Selecione...</option>
+                            <option value="AC">AC - Acre</option>
+                            <option value="AL">AL - Alagoas</option>
+                            <option value="AP">AP - Amapa</option>
+                            <option value="AM">AM - Amazonas</option>
+                            <option value="BA">BA - Bahia</option>
+                            <option value="CE">CE - Ceara</option>
+                            <option value="DF">DF - Distrito Federal</option>
+                            <option value="ES">ES - Espirito Santo</option>
+                            <option value="GO">GO - Goias</option>
+                            <option value="MA">MA - Maranhao</option>
+                            <option value="MT">MT - Mato Grosso</option>
+                            <option value="MS">MS - Mato Grosso do Sul</option>
+                            <option value="MG">MG - Minas Gerais</option>
+                            <option value="PA">PA - Para</option>
+                            <option value="PB">PB - Paraiba</option>
+                            <option value="PR">PR - Parana</option>
+                            <option value="PE">PE - Pernambuco</option>
+                            <option value="PI">PI - Piaui</option>
+                            <option value="RJ">RJ - Rio de Janeiro</option>
+                            <option value="RN">RN - Rio Grande do Norte</option>
+                            <option value="RS">RS - Rio Grande do Sul</option>
+                            <option value="RO">RO - Rondonia</option>
+                            <option value="RR">RR - Roraima</option>
+                            <option value="SC">SC - Santa Catarina</option>
+                            <option value="SP">SP - Sao Paulo</option>
+                            <option value="SE">SE - Sergipe</option>
+                            <option value="TO">TO - Tocantins</option>
+                        </select>
+                        <span asp-validation-for="estado" class="text-danger"></span>
                     </div>
 
                     <div class="col-md-4">
                         <label asp-for="cep" class="form-label fw-semibold">CEP</label>
-                        <input asp-for="cep" type="text" class="form-control" value="@(Model?.cep)" maxlength="9">
+                        <input asp-for="cep" type="text" class="form-control" value="@(Model?.cep)" maxlength="9" inputmode="numeric" pattern="^[0-9\-]+$" title="Use apenas numeros ou hifen.">
                     </div>
                 </div>
 
@@ -87,7 +117,7 @@
                         <i class="fas fa-arrow-left"></i> Voltar
                     </a>
                     <button type="submit" class="btn-login">
-                        <i class="fas fa-pencil-alt"></i> Editar
+                        <i class="fas fa-pencil-alt"></i> Salvar
                     </button>
                 </div>
             </form>
@@ -97,4 +127,30 @@
 
 @section Scripts {
     @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+    <script>
+        function bindInputCleaner(selector, cleaner) {
+            const input = document.querySelector(selector);
+            if (!input) return;
+
+            input.addEventListener('input', () => {
+                const cleaned = cleaner(input.value);
+                if (input.value !== cleaned) {
+                    input.value = cleaned;
+                }
+            });
+        }
+
+        bindInputCleaner('[name="nome"]', value => value.replace(/\d/g, ''));
+        bindInputCleaner('[name="telefone"]', value => value.replace(/[^0-9()\-\s]/g, ''));
+        bindInputCleaner('[name="celular"]', value => value.replace(/[^0-9()\-\s]/g, ''));
+        bindInputCleaner('[name="cep"]', value => value.replace(/[^0-9\-]/g, ''));
+        bindInputCleaner('[name="numero"]', value => {
+            if (/^\d/.test(value)) {
+                return value.replace(/\D/g, '');
+            }
+
+            const cleaned = value.replace(/[^sSnN\/]/g, '');
+            return /^s/i.test(cleaned) ? cleaned.slice(0, 3) : '';
+        });
+    </script>
 }

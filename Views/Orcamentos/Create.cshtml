@@ -34,13 +34,22 @@
         var marker = "R$ ";
         var start = text.IndexOf(marker, StringComparison.OrdinalIgnoreCase);
         var price = 0m;
+        var stock = 0;
         if (start >= 0)
         {
             var raw = text[(start + marker.Length)..].Split(',')[0].Trim();
             decimal.TryParse(raw, System.Globalization.NumberStyles.Number, br, out price);
         }
 
-        return new { value = p.Value, text = p.Text, price };
+        var stockMarker = "estoque ";
+        var stockStart = text.IndexOf(stockMarker, StringComparison.OrdinalIgnoreCase);
+        if (stockStart >= 0)
+        {
+            var rawStock = text[(stockStart + stockMarker.Length)..].Replace(")", "").Trim();
+            int.TryParse(rawStock, out stock);
+        }
+
+        return new { value = p.Value, text = p.Text, price, stock };
     });
 
     Modal? mensagemModal = null;
@@ -56,7 +65,6 @@
     <input type="hidden" asp-for="EnderecoCli" id="EnderecoCli" />
     <input type="hidden" asp-for="dataCriacao" value="@DateTime.Now.ToString("yyyy-MM-ddTHH:mm")" />
     <input type="hidden" asp-for="status" value="1" />
-    <input type="hidden" asp-for="parcelas" value="1" />
 
     <datalist id="servicos-list">
         @foreach (var servico in servicosData)
@@ -74,21 +82,52 @@
     <section class="af-create-panel is-active" id="stepCadastro">
         <header class="af-create-header">
             <img src="~/images/logo-af-reparos.png" alt="AF Reparos Automotivos" />
-            <h1>Criar orçamento - Dados cadastrais</h1>
+            <h1>Criar Orçamento - Dados Cadastrais</h1>
         </header>
 
         <div class="af-create-grid af-create-grid-client">
-            <label class="span-3">Nome:<span class="af-required">*</span><input asp-for="nome" id="nomeCliente" list="clientes-list" autocomplete="off" required /></label>
-            <label>Telefone:<input asp-for="TelefoneCli" id="telefoneCliente" placeholder="(XX) XXXXX-XXXX" /></label>
-            <label>Celular:<span class="af-required">*</span><input asp-for="CelularCli" id="celularCliente" placeholder="(XX) XXXXX-XXXX" required /></label>
+            <label class="span-3">Nome:<span class="af-required">*</span><input asp-for="nome" id="nomeCliente" list="clientes-list" autocomplete="off" pattern="^[^\d]+$" title="Nao use numeros no nome." required /></label>
+            <label>Telefone:<input asp-for="TelefoneCli" id="telefoneCliente" placeholder="(XX) XXXXX-XXXX" inputmode="tel" pattern="^[0-9()\-\s]*$" title="Use apenas numeros, espacos, parenteses ou hifen." /></label>
+            <label>Celular:<span class="af-required">*</span><input asp-for="CelularCli" id="celularCliente" placeholder="(XX) XXXXX-XXXX" inputmode="tel" pattern="^[0-9()\-\s]+$" title="Use apenas numeros, espacos, parenteses ou hifen." required /></label>
             <label>Documento:<span class="af-required">*</span><input asp-for="DocumentoCli" id="documentoCliente" maxlength="14" required /></label>
             <label class="span-2">E-mail:<span class="af-required">*</span><input asp-for="EmailCli" id="emailCliente" type="email" required /></label>
 
             <label class="span-3">Rua:<span class="af-required">*</span><input id="ruaCliente" required /></label>
-            <label>Nº:<span class="af-required">*</span><input id="numeroCliente" required /></label>
+            <label>Nº:<span class="af-required">*</span><input id="numeroCliente" pattern="^(\d+|s/n|S/N)$" title="Use apenas numeros ou s/n." required /></label>
             <label class="span-2">Cidade:<span class="af-required">*</span><input id="cidadeCliente" required /></label>
-            <label>UF:<span class="af-required">*</span><input id="ufCliente" maxlength="2" required /></label>
-            <label>CEP:<span class="af-required">*</span><input id="cepCliente" maxlength="9" required /></label>
+            <label>UF:<span class="af-required">*</span>
+                <select id="ufCliente" required>
+                    <option value="">Selecione...</option>
+                    <option value="AC">AC - Acre</option>
+                    <option value="AL">AL - Alagoas</option>
+                    <option value="AP">AP - Amapa</option>
+                    <option value="AM">AM - Amazonas</option>
+                    <option value="BA">BA - Bahia</option>
+                    <option value="CE">CE - Ceara</option>
+                    <option value="DF">DF - Distrito Federal</option>
+                    <option value="ES">ES - Espirito Santo</option>
+                    <option value="GO">GO - Goias</option>
+                    <option value="MA">MA - Maranhao</option>
+                    <option value="MT">MT - Mato Grosso</option>
+                    <option value="MS">MS - Mato Grosso do Sul</option>
+                    <option value="MG">MG - Minas Gerais</option>
+                    <option value="PA">PA - Para</option>
+                    <option value="PB">PB - Paraiba</option>
+                    <option value="PR">PR - Parana</option>
+                    <option value="PE">PE - Pernambuco</option>
+                    <option value="PI">PI - Piaui</option>
+                    <option value="RJ">RJ - Rio de Janeiro</option>
+                    <option value="RN">RN - Rio Grande do Norte</option>
+                    <option value="RS">RS - Rio Grande do Sul</option>
+                    <option value="RO">RO - Rondonia</option>
+                    <option value="RR">RR - Roraima</option>
+                    <option value="SC">SC - Santa Catarina</option>
+                    <option value="SP">SP - Sao Paulo</option>
+                    <option value="SE">SE - Sergipe</option>
+                    <option value="TO">TO - Tocantins</option>
+                </select>
+            </label>
+            <label>CEP:<span class="af-required">*</span><input id="cepCliente" maxlength="9" inputmode="numeric" pattern="^[0-9\-]+$" title="Use apenas numeros ou hifen." required /></label>
         </div>
 
         <div class="af-create-footer af-create-footer-end">
@@ -101,7 +140,7 @@
     <section class="af-create-panel" id="stepServico">
         <header class="af-create-header">
             <img src="~/images/logo-af-reparos.png" alt="AF Reparos Automotivos" />
-            <h1>Criar orçamento - Ordem de serviço</h1>
+            <h1>Criar Orçamento - Ordem de Serviço</h1>
         </header>
 
         <div class="af-create-grid af-create-grid-service">
@@ -117,6 +156,15 @@
                     <option value="Pix">Pix</option>
                     <option value="Cartao de debito">Cartao de debito</option>
                     <option value="Cartao de credito">Cartao de credito</option>
+                </select>
+            </label>
+            <label>Parcelas:<span class="af-required">*</span>
+                <select asp-for="parcelas" required>
+                    <option value="1">A vista</option>
+                    @for (var parcela = 2; parcela <= 12; parcela++)
+                    {
+                        <option value="@parcela">@parcela x</option>
+                    }
                 </select>
             </label>
         </div>
@@ -146,38 +194,53 @@
                     <label>Valor<span class="af-required">*</span><input asp-for="ServicosAssociados[j].preco" type="number" step="0.01" min="0" required data-service-price data-total-field /></label>
 
                     <div class="af-piece-row">
-                        <label>Peça<span class="af-required">*</span>
+                        <label class="af-piece-field">Peça<span class="af-required">*</span>
                             <select asp-for="ServicosAssociados[j].pecaId" asp-items="@Model.PecasDisponiveis" data-piece-select data-total-field>
                                 <option value="">Selecione a peça...</option>
                             </select>
                         </label>
-                        <label>Qtd. peça<span class="af-required">*</span><input asp-for="ServicosAssociados[j].qtdPeca" type="number" min="1" value="1" data-piece-qty data-total-field /></label>
-                        <label>Valor peça<span class="af-required">*</span><input asp-for="ServicosAssociados[j].valorPeca" type="number" step="0.01" min="0" value="0" readonly data-piece-price data-total-field /></label>
+                        <label class="af-piece-field">Qtd. peça<span class="af-required">*</span><input asp-for="ServicosAssociados[j].qtdPeca" type="number" min="1" value="1" data-piece-qty data-total-field /></label>
+                        <label class="af-piece-field">Valor peça<span class="af-required">*</span><input asp-for="ServicosAssociados[j].valorPeca" type="number" step="0.01" min="0" value="0" readonly data-piece-price data-total-field /></label>
                     </div>
 
-                    <input type="hidden" asp-for="ServicosAssociados[j].desconto" value="0" />
-                    <input type="hidden" asp-for="ServicosAssociados[j].taxa" value="0" />
+                    <div class="af-adjust-row">
+                        <label>Taxa
+                            <input type="text" inputmode="decimal" placeholder="0" data-tax-display data-total-field />
+                        </label>
+                        <label>Desconto
+                            <input type="text" inputmode="decimal" placeholder="0" data-discount-display data-total-field />
+                        </label>
+                        <label>Subtotal <input type="text" value="R$ 0,00" readonly data-line-subtotal /></label>
+                    </div>
+
+                    <input type="hidden" asp-for="ServicosAssociados[j].desconto" value="0" data-discount-value />
+                    <input type="hidden" asp-for="ServicosAssociados[j].taxa" value="0" data-tax-value />
                     <input type="hidden" asp-for="ServicosAssociados[j].observacao" value="" />
                     <input type="hidden" asp-for="ServicosAssociados[j].data_entrega" />
                 </div>
             }
         </div>
 
+        <div class="af-add-service-row">
+            <button type="button" class="af-create-add-svc" id="btnAdicionarServico">
+                <i class="fas fa-plus"></i> Adicionar serviÃ§o
+            </button>
+        </div>
+
         <div class="af-create-footer">
             <button type="button" class="af-create-back" id="goCadastro">
-                <i class="fas fa-arrow-left"></i> Voltar
+                <i class="fas fa-arrow-left"></i>
             </button>
             <div class="af-footer-spacer"></div>
-            <button type="button" class="af-create-add-svc" id="btnAdicionarServico">
-                <i class="fas fa-plus"></i> Adicionar serviço
-            </button>
             <div class="af-create-total">
                 <span>Total</span>
                 <input type="text" id="orcamentoTotal" value="R$ 0,00" readonly />
             </div>
-            <button type="submit" class="af-create-save" name="acao" value="gerar">
-                <i class="fas fa-check"></i> Salvar e Enviar
+            <div class="af-create-submit-stack">
+            <button type="submit" class="af-create-save">
+                <i class="fas fa-check"></i> Salvar
             </button>
+            </div>
         </div>
     </section>
 </form>
@@ -201,6 +264,85 @@
 
         const money = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
         const normalize = value => (value || '').trim().toLocaleLowerCase('pt-BR');
+
+        function ensureServiceDatalist(line) {
+            const serviceName = line.querySelector('[data-service-name]');
+            if (!serviceName) return;
+
+            let datalistId = serviceName.getAttribute('list');
+            if (!datalistId || datalistId === 'servicos-list') {
+                datalistId = `servicos-list-${window.crypto?.randomUUID?.() || Math.random().toString(36).slice(2)}`;
+                const datalist = document.createElement('datalist');
+                datalist.id = datalistId;
+                serviceName.after(datalist);
+                serviceName.setAttribute('list', datalistId);
+                return;
+            }
+
+            if (!document.getElementById(datalistId)) {
+                const datalist = document.createElement('datalist');
+                datalist.id = datalistId;
+                serviceName.after(datalist);
+            }
+        }
+
+        function getSelectedService(line) {
+            const serviceName = line.querySelector('[data-service-name]');
+            const serviceId = line.querySelector('[data-service-id]')?.value;
+
+            return servicosDisponiveisOptionsData.find(item => item.value === serviceId && serviceId !== '0')
+                || servicosDisponiveisOptionsData.find(item => normalize(item.name) === normalize(serviceName?.value));
+        }
+
+        function updateServiceSuggestions() {
+            const lines = [...document.querySelectorAll('.af-service-item')];
+            const selectedByLine = new Map(lines.map(line => [line, getSelectedService(line)?.value || '']));
+            const selectedIds = new Set([...selectedByLine.values()].filter(Boolean));
+
+            lines.forEach(line => {
+                ensureServiceDatalist(line);
+
+                const serviceName = line.querySelector('[data-service-name]');
+                const datalist = document.getElementById(serviceName?.getAttribute('list'));
+                if (!datalist) return;
+
+                const currentServiceId = selectedByLine.get(line);
+                datalist.innerHTML = '';
+                servicosDisponiveisOptionsData
+                    .filter(item => !selectedIds.has(item.value) || item.value === currentServiceId)
+                    .forEach(item => {
+                        const option = document.createElement('option');
+                        option.value = item.name;
+                        option.textContent = item.text || item.name;
+                        datalist.appendChild(option);
+                    });
+            });
+        }
+
+        function bindInputCleaner(id, cleaner) {
+            const input = document.getElementById(id);
+            if (!input) return;
+
+            input.addEventListener('input', () => {
+                const cleaned = cleaner(input.value);
+                if (input.value !== cleaned) {
+                    input.value = cleaned;
+                }
+            });
+        }
+
+        bindInputCleaner('nomeCliente', value => value.replace(/\d/g, ''));
+        bindInputCleaner('telefoneCliente', value => value.replace(/[^0-9()\-\s]/g, ''));
+        bindInputCleaner('celularCliente', value => value.replace(/[^0-9()\-\s]/g, ''));
+        bindInputCleaner('cepCliente', value => value.replace(/[^0-9\-]/g, ''));
+        bindInputCleaner('numeroCliente', value => {
+            if (/^\d/.test(value)) {
+                return value.replace(/\D/g, '');
+            }
+
+            const cleaned = value.replace(/[^sSnN\/]/g, '');
+            return /^s/i.test(cleaned) ? cleaned.slice(0, 3) : '';
+        });
 
         function setOptions(datalistId, items, getValue, getText) {
             const datalist = document.getElementById(datalistId);
@@ -259,22 +401,41 @@
                 .join('');
         }
 
+        function parseAdjustment(value, baseValue) {
+            const raw = (value || '').trim().replace(',', '.');
+            if (!raw) {
+                return 0;
+            }
+
+            const numeric = Number(raw.replace('%', ''));
+            if (!Number.isFinite(numeric) || numeric < 0) {
+                return 0;
+            }
+
+            return raw.includes('%') ? baseValue * (numeric / 100) : numeric;
+        }
+
         function updateLine(line) {
             const serviceName = line.querySelector('[data-service-name]');
             const serviceId = line.querySelector('[data-service-id]');
             const servicePrice = line.querySelector('[data-service-price]');
             const pieceSelect = line.querySelector('[data-piece-select]');
             const piecePrice = line.querySelector('[data-piece-price]');
+            const pieceQty = line.querySelector('[data-piece-qty]');
             const pieceRow = line.querySelector('.af-piece-row');
             const pieceMode = line.querySelector('[data-toggle-piece]')?.checked;
 
             const selectedService = servicosDisponiveisOptionsData.find(item => normalize(item.name) === normalize(serviceName?.value));
             if (selectedService) {
-                serviceId.value = selectedService.value;
-                servicePrice.value = Number(selectedService.price || 0).toFixed(2);
+                if (serviceId.value !== selectedService.value) {
+                    serviceId.value = selectedService.value;
+                    servicePrice.value = Number(selectedService.price || 0).toFixed(2);
+                }
             } else if (serviceId) {
                 serviceId.value = '0';
             }
+
+            updateServiceSuggestions();
 
             if (pieceRow) {
                 pieceRow.classList.toggle('is-open', !!pieceMode);
@@ -286,27 +447,55 @@
             const selectedPiece = pecasDisponiveisOptionsData.find(item => item.value === pieceSelect?.value);
             if (selectedPiece && piecePrice) {
                 piecePrice.value = Number(selectedPiece.price || 0).toFixed(2);
+                if (pieceQty) {
+                    pieceQty.max = selectedPiece.stock || 1;
+                    if (Number(pieceQty.value || 0) > Number(pieceQty.max)) {
+                        pieceQty.value = pieceQty.max;
+                    }
+                }
             } else if (piecePrice) {
                 piecePrice.value = '0.00';
+                if (pieceQty) {
+                    pieceQty.removeAttribute('max');
+                }
             }
 
             updateTotal();
         }
 
+        function calculateLineTotal(line) {
+            const qtd = Math.max(1, Number(line.querySelector('[name$=".qtd"]')?.value || 1));
+            const servicePrice = Number(line.querySelector('[data-service-price]')?.value || 0);
+            const piecePrice = Number(line.querySelector('[data-piece-price]')?.value || 0);
+            const pieceQty = Number(line.querySelector('[data-piece-qty]')?.value || 0);
+            const serviceBase = servicePrice * qtd;
+            const pieceBase = piecePrice * pieceQty;
+            const taxValue = parseAdjustment(line.querySelector('[data-tax-display]')?.value, serviceBase);
+            const discountValue = parseAdjustment(line.querySelector('[data-discount-display]')?.value, serviceBase);
+            const subtotal = Math.max(0, serviceBase + pieceBase + taxValue - discountValue);
+
+            const taxHidden = line.querySelector('[data-tax-value]');
+            const discountHidden = line.querySelector('[data-discount-value]');
+            const subtotalField = line.querySelector('[data-line-subtotal]');
+            if (taxHidden) taxHidden.value = taxValue.toFixed(2);
+            if (discountHidden) discountHidden.value = discountValue.toFixed(2);
+            if (subtotalField) subtotalField.value = money.format(subtotal);
+
+            return subtotal;
+        }
+
         function updateTotal() {
             let total = 0;
             document.querySelectorAll('.af-service-item').forEach(line => {
-                const qtd = Number(line.querySelector('[name$=".qtd"]')?.value || 0);
-                const servicePrice = Number(line.querySelector('[data-service-price]')?.value || 0);
-                const piecePrice = Number(line.querySelector('[data-piece-price]')?.value || 0);
-                const pieceQty = Number(line.querySelector('[data-piece-qty]')?.value || 0);
-                total += (servicePrice * qtd) + (piecePrice * pieceQty);
+                total += calculateLineTotal(line);
             });
 
             document.getElementById('orcamentoTotal').value = money.format(total);
         }
 
         function bindLine(line) {
+            ensureServiceDatalist(line);
+
             line.querySelectorAll('[data-total-field], [data-toggle-piece]').forEach(element => {
                 element.addEventListener('input', () => updateLine(line));
                 element.addEventListener('change', () => updateLine(line));
@@ -332,6 +521,7 @@
                 line.remove();
                 reindexServiceLines();
                 updateTotal();
+                updateServiceSuggestions();
             });
 
             updateLine(line);
@@ -368,7 +558,7 @@
 
         document.getElementById('orcamentoForm').addEventListener('submit', () => {
             composeEndereco();
-            clearDraft();
+            updateTotal();
         });
 
         document.getElementById('nomeCliente').addEventListener('input', event => {
@@ -442,12 +632,17 @@
                     <label>Qtd.<span class="af-required">*</span><input name="ServicosAssociados[${index}].qtd" type="number" min="1" value="1" required data-total-field /></label>
                     <label>Valor<span class="af-required">*</span><input name="ServicosAssociados[${index}].preco" type="number" step="0.01" min="0" required data-service-price data-total-field /></label>
                     <div class="af-piece-row">
-                        <label>Peça<span class="af-required">*</span><select name="ServicosAssociados[${index}].pecaId" data-piece-select data-total-field>${optionHtml(pecasDisponiveisOptionsData, 'Selecione a peça...')}</select></label>
-                        <label>Qtd. peça<span class="af-required">*</span><input name="ServicosAssociados[${index}].qtdPeca" type="number" min="1" value="1" data-piece-qty data-total-field /></label>
-                        <label>Valor peça<span class="af-required">*</span><input name="ServicosAssociados[${index}].valorPeca" type="number" step="0.01" min="0" value="0" readonly data-piece-price data-total-field /></label>
+                        <label class="af-piece-field">Peça<span class="af-required">*</span><select name="ServicosAssociados[${index}].pecaId" data-piece-select data-total-field>${optionHtml(pecasDisponiveisOptionsData, 'Selecione a peça...')}</select></label>
+                        <label class="af-piece-field">Qtd. peça<span class="af-required">*</span><input name="ServicosAssociados[${index}].qtdPeca" type="number" min="1" value="1" data-piece-qty data-total-field /></label>
+                        <label class="af-piece-field">Valor peça<span class="af-required">*</span><input name="ServicosAssociados[${index}].valorPeca" type="number" step="0.01" min="0" value="0" readonly data-piece-price data-total-field /></label>
                     </div>
-                    <input type="hidden" name="ServicosAssociados[${index}].desconto" value="0" />
-                    <input type="hidden" name="ServicosAssociados[${index}].taxa" value="0" />
+                    <div class="af-adjust-row">
+                        <label>Taxa<input type="text" inputmode="decimal" placeholder="%" data-tax-display data-total-field /></label>
+                        <label>Desconto<input type="text" inputmode="decimal" placeholder="0" data-discount-display data-total-field /></label>
+                        <label>Subtotal <input type="text" value="R$ 0,00" readonly data-line-subtotal /></label>
+                    </div>
+                    <input type="hidden" name="ServicosAssociados[${index}].desconto" value="0" data-discount-value />
+                    <input type="hidden" name="ServicosAssociados[${index}].taxa" value="0" data-tax-value />
                     <input type="hidden" name="ServicosAssociados[${index}].observacao" value="" />
                     <input type="hidden" name="ServicosAssociados[${index}].data_entrega" value="" />
                 </div>`;
@@ -459,124 +654,22 @@
             serviceIndexCounter++;
         });
 
-        // --- Persistência do rascunho (localStorage) ---
-        const DRAFT_KEY = 'af_orcamento_draft';
-        let _draftTimer;
-
-        function getDraftData() {
-            const servicos = [];
-            document.querySelectorAll('.af-service-item').forEach(line => {
-                servicos.push({
-                    qtd:      line.querySelector('[name$=".qtd"]')?.value ?? '1',
-                    desc:     line.querySelector('[data-service-name]')?.value ?? '',
-                    idSvc:    line.querySelector('[data-service-id]')?.value ?? '0',
-                    funcId:   line.querySelector('select[name$=".funcionarioId"]')?.value ?? '',
-                    preco:    line.querySelector('[data-service-price]')?.value ?? '',
-                    hasPeca:  line.querySelector('[data-toggle-piece]')?.checked ?? false,
-                    pecaId:   line.querySelector('[data-piece-select]')?.value ?? '',
-                    qtdPeca:  line.querySelector('[data-piece-qty]')?.value ?? '1'
-                });
-            });
-            return {
-                idCliente: document.getElementById('idCliente').value,
-                nome:      document.getElementById('nomeCliente').value,
-                telefone:  document.getElementById('telefoneCliente').value,
-                celular:   document.getElementById('celularCliente').value,
-                documento: document.getElementById('documentoCliente').value,
-                email:     document.getElementById('emailCliente').value,
-                rua:       document.getElementById('ruaCliente').value,
-                numero:    document.getElementById('numeroCliente').value,
-                cidade:    document.getElementById('cidadeCliente').value,
-                uf:        document.getElementById('ufCliente').value,
-                cep:       document.getElementById('cepCliente').value,
-                idVeiculo: document.getElementById('idVeiculo').value,
-                placa:     document.getElementById('placaVeiculo').value,
-                marca:     document.getElementById('marcaVeiculo').value,
-                modelo:    document.getElementById('modeloVeiculo').value,
-                cor:       document.getElementById('corVeiculo').value,
-                ano:       document.getElementById('anoVeiculo').value,
-                pagto:     document.querySelector('[name="formaPagamento"]')?.value ?? '',
-                servicos
-            };
-        }
-
-        function saveDraft() {
-            try { localStorage.setItem(DRAFT_KEY, JSON.stringify(getDraftData())); } catch (_) {}
-        }
-
-        function scheduleSave() {
-            clearTimeout(_draftTimer);
-            _draftTimer = setTimeout(saveDraft, 300);
-        }
-
-        function clearDraft() {
-            try { localStorage.removeItem(DRAFT_KEY); } catch (_) {}
-        }
-
-        function restoreDraft() {
-            let draft;
-            try {
-                const raw = localStorage.getItem(DRAFT_KEY);
-                if (!raw) return;
-                draft = JSON.parse(raw);
-            } catch (_) { return; }
-
-            const set = (id, val) => { const el = document.getElementById(id); if (el) el.value = val ?? ''; };
-
-            set('idCliente', draft.idCliente);
-            set('nomeCliente', draft.nome);
-            set('telefoneCliente', draft.telefone);
-            set('celularCliente', draft.celular);
-            set('documentoCliente', draft.documento);
-            set('emailCliente', draft.email);
-            set('ruaCliente', draft.rua);
-            set('numeroCliente', draft.numero);
-            set('cidadeCliente', draft.cidade);
-            set('ufCliente', draft.uf);
-            set('cepCliente', draft.cep);
-            composeEndereco();
-
-            set('idVeiculo', draft.idVeiculo);
-            set('placaVeiculo', draft.placa);
-            set('marcaVeiculo', draft.marca);
-            set('modeloVeiculo', draft.modelo);
-            set('corVeiculo', draft.cor);
-            set('anoVeiculo', draft.ano);
-
-            const pagto = document.querySelector('[name="formaPagamento"]');
-            if (pagto) pagto.value = draft.pagto ?? '';
-
-            if (!draft.servicos?.length) return;
-
-            const container = document.getElementById('servicos-container');
-            for (let i = 1; i < draft.servicos.length; i++) {
-                container.insertAdjacentHTML('beforeend', buildServiceLineHtml(serviceIndexCounter));
-                bindLine(container.querySelector(`[data-service-index="${serviceIndexCounter}"]`));
-                serviceIndexCounter++;
+        function restoreEnderecoFromHidden() {
+            const endereco = document.getElementById('EnderecoCli')?.value || '';
+            if (!endereco || document.getElementById('ruaCliente').value) {
+                return;
             }
 
-            document.querySelectorAll('.af-service-item').forEach((line, i) => {
-                if (i >= draft.servicos.length) return;
-                const s = draft.servicos[i];
-                const q = (sel, val) => { const el = line.querySelector(sel); if (el) el.value = val ?? ''; };
-                q('[name$=".qtd"]', s.qtd);
-                q('[data-service-name]', s.desc);
-                q('[data-service-id]', s.idSvc);
-                q('select[name$=".funcionarioId"]', s.funcId);
-                q('[data-service-price]', s.preco);
-                q('[data-piece-select]', s.pecaId);
-                q('[data-piece-qty]', s.qtdPeca);
-                const toggle = line.querySelector('[data-toggle-piece]');
-                if (toggle) toggle.checked = !!s.hasPeca;
-                updateLine(line);
-            });
+            const partes = endereco.split(',').map(parte => parte.trim());
+            document.getElementById('ruaCliente').value = partes[0] || '';
+            document.getElementById('numeroCliente').value = partes[1] || '';
+            document.getElementById('cidadeCliente').value = partes[2] || '';
+            document.getElementById('ufCliente').value = partes[3] || '';
+            document.getElementById('cepCliente').value = partes[4] || '';
         }
 
         document.querySelectorAll('.af-service-item').forEach(bindLine);
-        restoreDraft();
-
-        document.getElementById('orcamentoForm').addEventListener('input', scheduleSave);
-        document.getElementById('orcamentoForm').addEventListener('change', scheduleSave);
+        restoreEnderecoFromHidden();
 
         @if (mensagemModal != null)
         {

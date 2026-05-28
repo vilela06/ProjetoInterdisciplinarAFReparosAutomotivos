@@ -44,6 +44,8 @@ public class ClientesController : Controller
     [HttpPost, ActionName("Edit")]
     public async Task<IActionResult> Update(Clientes cliente)
     {
+        cliente.estado = (cliente.estado ?? string.Empty).ToUpperInvariant();
+
         if (!ModelState.IsValid)
         {
             return View("Edit", cliente);

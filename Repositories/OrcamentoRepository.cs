@@ -1,6 +1,7 @@
 using AfReparosAutomotivos.Interfaces;
 using AfReparosAutomotivos.Models;
 using Microsoft.Data.SqlClient;
+using System.Data;
 
 namespace AfReparosAutomotivos.Repositories
 {
@@ -72,7 +73,7 @@ namespace AfReparosAutomotivos.Repositories
             await using var connection = CreateConnection();
             await connection.OpenAsync();
             await using var command = new SqlCommand(
-                BaseSelect() + " WHERE c.chaveCli = @chaveAcesso ORDER BY o.data_criacao DESC",
+                BaseSelect() + " WHERE chaveCli = @chaveAcesso ORDER BY data_criacao DESC",
                 connection);
             command.Parameters.AddWithValue("@chaveAcesso", chaveAcesso.Trim());
 
@@ -92,65 +93,65 @@ namespace AfReparosAutomotivos.Repositories
 
             if (filtros.statusId.HasValue)
             {
-                query += " AND o.statusOrc = @status";
+                query += " AND statusOrc = @status";
                 parameters.Add(new SqlParameter("@status", filtros.statusId.Value));
             }
 
             if (!string.IsNullOrWhiteSpace(filtros.cpf))
             {
-                query += " AND pc.documento LIKE @cpf";
+                query += " AND documento LIKE @cpf";
                 parameters.Add(new SqlParameter("@cpf", "%" + filtros.cpf + "%"));
             }
 
             if (!string.IsNullOrWhiteSpace(filtros.nome))
             {
-                query += " AND pc.nome LIKE @nome";
+                query += " AND nomeCliente LIKE @nome";
                 parameters.Add(new SqlParameter("@nome", "%" + filtros.nome + "%"));
             }
 
             if (!string.IsNullOrWhiteSpace(filtros.busca))
             {
                 query += " AND (" +
-                    "pc.nome LIKE @busca OR " +
-                    "CONVERT(VARCHAR(20), o.idOrcamento) LIKE @busca OR " +
-                    "CONVERT(VARCHAR(10), o.data_criacao, 23) LIKE @busca OR " +
-                    "CONVERT(VARCHAR(10), o.data_criacao, 103) LIKE @busca OR " +
-                    "CONVERT(VARCHAR(10), o.data_criacao, 105) LIKE @busca" +
+                    "nomeCliente LIKE @busca OR " +
+                    "CONVERT(VARCHAR(20), idOrcamento) LIKE @busca OR " +
+                    "CONVERT(VARCHAR(10), data_criacao, 23) LIKE @busca OR " +
+                    "CONVERT(VARCHAR(10), data_criacao, 103) LIKE @busca OR " +
+                    "CONVERT(VARCHAR(10), data_criacao, 105) LIKE @busca" +
                     ")";
                 parameters.Add(new SqlParameter("@busca", "%" + filtros.busca.Trim() + "%"));
             }
 
             if (filtros.dataCriacao.HasValue)
             {
-                query += " AND CAST(o.data_criacao AS date) = @dataCriacao";
+                query += " AND CAST(data_criacao AS date) = @dataCriacao";
                 parameters.Add(new SqlParameter("@dataCriacao", filtros.dataCriacao.Value.Date));
             }
 
             if (filtros.dataEntrega.HasValue)
             {
-                query += " AND CAST(o.data_entrega AS date) = @dataEntrega";
+                query += " AND CAST(data_entrega AS date) = @dataEntrega";
                 parameters.Add(new SqlParameter("@dataEntrega", filtros.dataEntrega.Value.Date));
             }
 
             if (!string.IsNullOrWhiteSpace(filtros.formaPagamento))
             {
-                query += " AND o.forma_pgto LIKE @formaPagamento";
+                query += " AND forma_pgto LIKE @formaPagamento";
                 parameters.Add(new SqlParameter("@formaPagamento", "%" + filtros.formaPagamento + "%"));
             }
 
             if (filtros.parcelas.HasValue)
             {
-                query += " AND o.parcelas = @parcelas";
+                query += " AND parcelas = @parcelas";
                 parameters.Add(new SqlParameter("@parcelas", filtros.parcelas.Value));
             }
 
             if (filtros.preco.HasValue)
             {
-                query += " AND o.total = @preco";
+                query += " AND total = @preco";
                 parameters.Add(new SqlParameter("@preco", filtros.preco.Value));
             }
 
-            query += " ORDER BY o.data_criacao DESC";
+            query += " ORDER BY data_criacao DESC";
 
             var orcamentos = new List<OrcamentosViewModel>();
             await using var connection = CreateConnection();
@@ -171,7 +172,7 @@ namespace AfReparosAutomotivos.Repositories
             OrcamentosViewModel? orcamento = null;
             await using var connection = CreateConnection();
             await connection.OpenAsync();
-            await using var command = new SqlCommand(BaseSelect() + " WHERE o.idOrcamento = @id", connection);
+            await using var command = new SqlCommand(BaseSelect() + " WHERE idOrcamento = @id", connection);
             command.Parameters.AddWithValue("@id", id);
             await using var reader = await command.ExecuteReaderAsync();
             if (await reader.ReadAsync())
@@ -189,7 +190,10 @@ namespace AfReparosAutomotivos.Repositories
             {
                 idItem = item.idItem,
                 idServico = item.servicoId,
+                funcionarioId = item.funcionarioId,
+                pecaId = item.pecaId,
                 qtd = item.qtd,
+                qtdPeca = item.qtdPeca,
                 data_entrega = item.dataEntrega,
                 preco = item.preco,
                 descricao = item.descricao,
@@ -210,16 +214,32 @@ namespace AfReparosAutomotivos.Repositories
 
             await using var connection = CreateConnection();
             await connection.OpenAsync();
-            await using var command = new SqlCommand(
-                "UPDATE o SET statusOrc = @status " +
-                "FROM Orcamento o INNER JOIN Cliente c ON c.idCliente = o.clienteId " +
-                "WHERE o.idOrcamento = @id AND c.chaveCli = @chaveAcesso AND o.statusOrc = 1",
-                connection);
-            command.Parameters.AddWithValue("@id", id);
-            command.Parameters.AddWithValue("@chaveAcesso", chaveAcesso.Trim());
-            command.Parameters.AddWithValue("@status", status);
 
-            return await command.ExecuteNonQueryAsync() > 0;
+            try
+            {
+                await using var procedureCommand = new SqlCommand("SP_AtualizarStatusOrcamentoCliente", connection)
+                {
+                    CommandType = CommandType.StoredProcedure
+                };
+                procedureCommand.Parameters.AddWithValue("@id", id);
+                procedureCommand.Parameters.AddWithValue("@chaveAcesso", chaveAcesso.Trim());
+                procedureCommand.Parameters.AddWithValue("@status", status);
+
+                return Convert.ToInt32(await procedureCommand.ExecuteScalarAsync()) > 0;
+            }
+            catch (SqlException)
+            {
+                await using var command = new SqlCommand(
+                    "UPDATE o SET statusOrc = @status " +
+                    "FROM Orcamento o INNER JOIN Cliente c ON c.idCliente = o.clienteId " +
+                    "WHERE o.idOrcamento = @id AND c.chaveCli = @chaveAcesso AND o.statusOrc = 1 AND @status IN (2, 3)",
+                    connection);
+                command.Parameters.AddWithValue("@id", id);
+                command.Parameters.AddWithValue("@chaveAcesso", chaveAcesso.Trim());
+                command.Parameters.AddWithValue("@status", status);
+
+                return await command.ExecuteNonQueryAsync() > 0;
+            }
         }
 
         public async Task Update(OrcamentosViewModel orcamento)
@@ -239,17 +259,19 @@ namespace AfReparosAutomotivos.Repositories
         }
 
         private static string BaseSelect() =>
+            "SELECT * FROM (" +
             "SELECT o.idOrcamento, o.clienteId, o.funcionarioId, o.veiculoId, o.data_criacao, o.data_entrega, " +
             "o.statusOrc, o.total, o.forma_pgto, o.parcelas, pc.nome AS nomeCliente, pf.nome AS nomeFuncionario, " +
-            "pc.documento, COALESCE(c.telefone, pc.celular), COALESCE(e.logradouro + ', ' + e.cidade + ' - ' + e.estado + ', ' + e.CEP, '') AS endereco, " +
-            "v.placa, v.marca, v.modelo, v.cor, v.ano " +
+            "pc.documento, COALESCE(c.telefone, pc.celular) AS telefoneContato, COALESCE(e.logradouro + ', ' + e.numero + ', ' + e.cidade + ' - ' + e.estado + ', ' + e.CEP, '') AS endereco, " +
+            "v.placa, v.marca, v.modelo, v.cor, v.ano, c.chaveCli " +
             "FROM Orcamento o " +
             "INNER JOIN Cliente c ON c.idCliente = o.clienteId " +
             "INNER JOIN Pessoa pc ON pc.idPessoa = c.idCliente " +
             "INNER JOIN Funcionario f ON f.idFuncionario = o.funcionarioId " +
             "INNER JOIN Pessoa pf ON pf.idPessoa = f.idFuncionario " +
             "INNER JOIN Veiculo v ON v.idVeiculo = o.veiculoId " +
-            "LEFT JOIN Endereco e ON e.pessoaId = pc.idPessoa";
+            "LEFT JOIN Endereco e ON e.pessoaId = pc.idPessoa" +
+            ") dados";
 
         private static OrcamentosViewModel Map(SqlDataReader reader) => new()
         {

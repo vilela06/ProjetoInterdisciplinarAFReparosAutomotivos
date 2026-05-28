@@ -13,6 +13,12 @@ namespace AfReparosAutomotivos.Controllers;
 [Authorize(AuthenticationSchemes = "Identity.Login")]
 public class OrcamentosController : Controller
 {
+    private static readonly HashSet<string> UfsValidas = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "AC", "AL", "AP", "AM", "BA", "CE", "DF", "ES", "GO", "MA", "MT", "MS", "MG",
+        "PA", "PB", "PR", "PE", "PI", "RJ", "RN", "RS", "RO", "RR", "SC", "SP", "SE", "TO"
+    };
+
     private readonly IOrcamentoRepository _orcamentoRepository;
     private readonly IClienteRepository _clienteRepository;
     private readonly IItemRepository _itemRepository;
@@ -146,11 +152,12 @@ public class OrcamentosController : Controller
     /// </summary>
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Create(OrcamentosViewModel orcamentoViewModel, string acao)
+    public async Task<IActionResult> Create(OrcamentosViewModel orcamentoViewModel)
     {
         var idClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier);
         var idFuncionario = idClaim != null && int.TryParse(idClaim.Value, out int id) ? id : 1;
         orcamentoViewModel.DocumentoCli = ApenasNumeros(orcamentoViewModel.DocumentoCli);
+        ValidarEnderecoClienteFormulario(orcamentoViewModel);
 
         if (!ModelState.IsValid)
         {
@@ -171,6 +178,12 @@ public class OrcamentosController : Controller
             return View(orcamentoViewModel);
         }
 
+        int? clienteCriadoId = null;
+        int? veiculoCriadoId = null;
+        int? orcamentoCriadoId = null;
+        var servicosCriados = new List<int>();
+        var baixasEstoque = new List<(int pecaId, int quantidade)>();
+
         try
         {
             int idCliente = orcamentoViewModel.idCli.GetValueOrDefault();
@@ -187,6 +200,7 @@ public class OrcamentosController : Controller
                 };
                 PreencherEnderecoCliente(cliente, orcamentoViewModel.EnderecoCli);
                 idCliente = await _clienteRepository.Add(cliente);
+                clienteCriadoId = idCliente;
             }
 
             var todosOsItensCalculados = new List<ItemViewModel>();
@@ -206,6 +220,7 @@ public class OrcamentosController : Controller
                 };
 
                 idVeiculo = await _veiculoRepository.Add(veiculoEntidade);
+                veiculoCriadoId = idVeiculo;
             }
 
             var itensDoOrcamento = orcamentoViewModel.ServicosAssociados
@@ -234,6 +249,7 @@ public class OrcamentosController : Controller
                         Descricao = item.novoServicoDescricao ?? string.Empty,
                         PrecoBase = item.preco
                     });
+                    servicosCriados.Add(item.idServico);
                 }
 
                 var precoBase = item.idServico <= 0
@@ -258,11 +274,9 @@ public class OrcamentosController : Controller
                 }
 
                 item.valorPeca = valorPeca;
-                item.preco = (precoBase * item.qtd) + (valorPeca * item.qtdPeca);
-
-                var custoTotal = item.preco * (1 + item.taxa);
-
-                var valorItemFinal = custoTotal - item.desconto;
+                var valorServico = precoBase * item.qtd;
+                var valorItemFinal = Math.Max(0, valorServico + (valorPeca * item.qtdPeca) + item.taxa - item.desconto);
+                item.preco = valorItemFinal;
 
                 totalGeral += valorItemFinal;
 
@@ -290,6 +304,7 @@ public class OrcamentosController : Controller
                 parcelas = orcamentoViewModel.parcelas
             };
             int idOrcamento = await _orcamentoRepository.Add(orcamento);
+            orcamentoCriadoId = idOrcamento;
 
             if (todosOsItensCalculados.Any()) 
             {
@@ -327,41 +342,38 @@ public class OrcamentosController : Controller
                     {
                         throw new InvalidOperationException("Nao foi possivel baixar o estoque de uma das pecas do orcamento.");
                     }
+
+                    baixasEstoque.Add((item.pecaId!.Value, item.qtdPeca));
                 }
             }
 
-            if (string.Equals(acao, "gerar", StringComparison.OrdinalIgnoreCase))
+            var clienteAviso = await _clienteRepository.GetId(idCliente);
+            var mensagemAviso = CriarMensagemAvisoCliente(clienteAviso, idOrcamento);
+            var avisoUrl = CriarLinkAvisoCliente(clienteAviso?.celular ?? orcamentoViewModel.CelularCli, mensagemAviso);
+            var emailAviso = string.IsNullOrWhiteSpace(clienteAviso?.email) ? orcamentoViewModel.EmailCli : clienteAviso.email;
+            var avisoEmailUrl = CriarLinkEmailCliente(emailAviso, mensagemAviso);
+
+            if (avisoUrl == null)
             {
-                var clienteAviso = await _clienteRepository.GetId(idCliente);
-                var mensagemAviso = CriarMensagemAvisoCliente(clienteAviso, idOrcamento);
-                var avisoUrl = CriarLinkAvisoCliente(clienteAviso?.celular ?? orcamentoViewModel.CelularCli, mensagemAviso);
-                var emailAviso = string.IsNullOrWhiteSpace(clienteAviso?.email) ? orcamentoViewModel.EmailCli : clienteAviso.email;
-                var avisoEmailUrl = CriarLinkEmailCliente(emailAviso, mensagemAviso);
-
-                if (avisoUrl == null)
-                {
-                    TempData["AvisoClienteMensagem"] = "Orcamento salvo, mas o cliente nao possui celular cadastrado para envio do aviso.";
-                }
-                else
-                {
-                    TempData["AvisoClienteUrl"] = avisoUrl;
-                    TempData["AvisoClienteMensagem"] = "Orcamento salvo. O aviso ao cliente foi preparado para envio pelo celular e e-mail.";
-                }
-
-                if (avisoEmailUrl != null)
-                {
-                    TempData["AvisoClienteEmailUrl"] = avisoEmailUrl;
-                }
+                TempData["AvisoClienteMensagem"] = "Orcamento salvo, mas o cliente nao possui celular cadastrado para envio do aviso.";
             }
             else
             {
-                TempData["AvisoClienteMensagem"] = "Orcamento salvo como rascunho.";
+                TempData["AvisoClienteUrl"] = avisoUrl;
+                TempData["AvisoClienteMensagem"] = "Orcamento salvo. O aviso ao cliente foi preparado para envio pelo celular e e-mail.";
+            }
+
+            if (avisoEmailUrl != null)
+            {
+                TempData["AvisoClienteEmailUrl"] = avisoEmailUrl;
             }
 
             return RedirectToAction("Details", "Orcamentos", new { id = idOrcamento });
         }
         catch (Exception ex)
         {
+            await DesfazerCriacaoOrcamentoAsync(orcamentoCriadoId, baixasEstoque, servicosCriados, veiculoCriadoId, clienteCriadoId);
+
             var erro = new Modal
             {
                 Title = "Erro na criação",
@@ -370,6 +382,39 @@ public class OrcamentosController : Controller
             TempData["Mensagem"] = JsonSerializer.Serialize(erro);
             await CarregarServicosNoViewModel(orcamentoViewModel); 
             return View(orcamentoViewModel);
+        }
+    }
+
+    private async Task DesfazerCriacaoOrcamentoAsync(
+        int? orcamentoId,
+        List<(int pecaId, int quantidade)> baixasEstoque,
+        List<int> servicosCriados,
+        int? veiculoId,
+        int? clienteId)
+    {
+        foreach (var baixa in baixasEstoque)
+        {
+            await _pecaRepository.ReporEstoque(baixa.pecaId, baixa.quantidade);
+        }
+
+        if (orcamentoId.HasValue)
+        {
+            await _orcamentoRepository.Delete(orcamentoId.Value);
+        }
+
+        foreach (var servicoId in servicosCriados.Distinct().Reverse())
+        {
+            await _servicoRepository.DeleteCreated(servicoId);
+        }
+
+        if (veiculoId.HasValue)
+        {
+            await _veiculoRepository.DeleteCreated(veiculoId.Value);
+        }
+
+        if (clienteId.HasValue)
+        {
+            await _clienteRepository.DeleteCreated(clienteId.Value);
         }
     }
 
@@ -422,8 +467,35 @@ public class OrcamentosController : Controller
         cliente.logradouro = partes.ElementAtOrDefault(0) ?? string.Empty;
         cliente.numero = partes.ElementAtOrDefault(1) ?? string.Empty;
         cliente.cidade = partes.ElementAtOrDefault(2) ?? string.Empty;
-        cliente.estado = partes.ElementAtOrDefault(3) ?? string.Empty;
+        cliente.estado = (partes.ElementAtOrDefault(3) ?? string.Empty).ToUpperInvariant();
         cliente.cep = partes.ElementAtOrDefault(4) ?? string.Empty;
+    }
+
+    private void ValidarEnderecoClienteFormulario(OrcamentosViewModel orcamentoViewModel)
+    {
+        var partes = (orcamentoViewModel.EnderecoCli ?? string.Empty)
+            .Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
+
+        var numero = partes.ElementAtOrDefault(1) ?? string.Empty;
+        var uf = partes.ElementAtOrDefault(3) ?? string.Empty;
+        var cep = partes.ElementAtOrDefault(4) ?? string.Empty;
+
+        if (!string.IsNullOrWhiteSpace(numero) &&
+            !System.Text.RegularExpressions.Regex.IsMatch(numero, @"^(\d+|s/n|S/N)$"))
+        {
+            ModelState.AddModelError(nameof(orcamentoViewModel.EnderecoCli), "O numero deve conter apenas numeros ou s/n.");
+        }
+
+        if (!string.IsNullOrWhiteSpace(cep) &&
+            !System.Text.RegularExpressions.Regex.IsMatch(cep, @"^[0-9\-]+$"))
+        {
+            ModelState.AddModelError(nameof(orcamentoViewModel.EnderecoCli), "O CEP nao pode conter letras.");
+        }
+
+        if (string.IsNullOrWhiteSpace(uf) || !UfsValidas.Contains(uf))
+        {
+            ModelState.AddModelError(nameof(orcamentoViewModel.EnderecoCli), "Informe uma UF valida.");
+        }
     }
 
     private void AdicionarMensagemErrosValidacao()
@@ -535,22 +607,66 @@ public class OrcamentosController : Controller
             return RedirectToAction("Index");
         }
 
+        if (orcamentoViewModel.status is 4 or 5 && !orcamentoViewModel.dataEntrega.HasValue)
+        {
+            ModelState.AddModelError(nameof(orcamentoViewModel.dataEntrega), "Informe a data de entrega para colocar o orcamento em execucao ou finalizado.");
+            PreencherDadosExibicaoEdicao(orcamentoViewModel, orcamentoAtual);
+            return View("Edit", orcamentoViewModel);
+        }
+
         var todosOsItensCalculados = new List<ItemViewModel>();
         decimal totalGeral = 0;
+        var itensAtuais = (await _itemRepository.GetByOrcamento(orcamentoViewModel.idOrcamento)).ToList();
 
         var itensDoOrcamento = orcamentoViewModel.ServicosAssociados
             .Where(item => item != null && item.idServico > 0 && item.qtd > 0)
             .ToList();
+
+        if (orcamentoViewModel.ServicosAssociados.Any(item => item.qtd <= 0 || item.preco <= 0))
+        {
+            ModelState.AddModelError(string.Empty, "A quantidade e o valor dos servicos devem ser maiores que zero.");
+            PreencherDadosExibicaoEdicao(orcamentoViewModel, orcamentoAtual);
+            return View("Edit", orcamentoViewModel);
+        }
+
+        var pecasSolicitadas = itensDoOrcamento
+            .Where(item => item.pecaId.HasValue)
+            .GroupBy(item => item.pecaId!.Value)
+            .Select(grupo => new
+            {
+                PecaId = grupo.Key,
+                Quantidade = grupo.Sum(item => Math.Max(1, item.qtdPeca))
+            })
+            .ToList();
+
+        foreach (var solicitacao in pecasSolicitadas)
+        {
+            var peca = await _pecaRepository.GetId(solicitacao.PecaId);
+            var reservadoNesteOrcamento = itensAtuais
+                .Where(item => item.pecaId == solicitacao.PecaId)
+                .Sum(item => item.qtdPeca);
+
+            var disponivel = (peca?.qtdEsto ?? 0) + reservadoNesteOrcamento;
+            if (peca == null || solicitacao.Quantidade > disponivel)
+            {
+                ModelState.AddModelError(string.Empty, $"Estoque insuficiente para a peca {peca?.nome ?? solicitacao.PecaId.ToString()}.");
+                PreencherDadosExibicaoEdicao(orcamentoViewModel, orcamentoAtual);
+                return View("Edit", orcamentoViewModel);
+            }
+        }
                 
         foreach (var item in itensDoOrcamento)
         {
-            var precoBase = await _servicoRepository.GetPrecoBaseByIdAsync(item.idServico); 
+            var valorPeca = 0m;
+            if (item.pecaId.HasValue)
+            {
+                var peca = await _pecaRepository.GetId(item.pecaId.Value);
+                valorPeca = (peca?.valor ?? 0m) * Math.Max(1, item.qtdPeca);
+            }
 
-            item.preco = precoBase;
-
-            var custoTotal = (item.preco * item.qtd) * (1 + item.taxa);
-
+            var custoTotal = ((item.preco * item.qtd) + valorPeca) * (1 + item.taxa);
             var valorItemFinal = custoTotal - item.desconto;
+            item.preco = valorItemFinal;
 
             totalGeral += valorItemFinal;
 
@@ -573,27 +689,59 @@ public class OrcamentosController : Controller
                 {
                     idItem = itemViewModel.idItem,
                     idOrcamento = orcamentoViewModel.idOrcamento, 
-                    idVeiculo = orcamentoViewModel.idVeiculo.GetValueOrDefault(),
+                    idVeiculo = orcamentoViewModel.idVeiculo.GetValueOrDefault(orcamentoAtual.idVeiculo.GetValueOrDefault()),
                     idServico = itemViewModel.idServico,
-                    funcionarioId = orcamentoViewModel.idFuncionario,
+                    funcionarioId = itemViewModel.funcionarioId > 0 ? itemViewModel.funcionarioId : orcamentoViewModel.idFuncionario,
                     qtd = itemViewModel.qtd,
+                    pecaId = itemViewModel.pecaId,
+                    qtdPeca = itemViewModel.qtdPeca,
                     data_entrega = itemViewModel.data_entrega,
                     preco = itemViewModel.preco,
                     descricao = itemViewModel.observacao,
-                    taxa = itemViewModel.taxa,
-                    desconto = itemViewModel.desconto
+                    taxa = 0m,
+                    desconto = 0m
                 };
                 
                 listaEntidadesItens.Add(itemEntidade);
             }
 
             await _itemRepository.Update(listaEntidadesItens);
+
+            foreach (var item in itensAtuais.Where(item => item.pecaId.HasValue && item.qtdPeca > 0))
+            {
+                await _pecaRepository.ReporEstoque(item.pecaId!.Value, item.qtdPeca);
+            }
+
+            foreach (var item in listaEntidadesItens.Where(item => item.pecaId.HasValue && item.qtdPeca > 0))
+            {
+                var baixouEstoque = await _pecaRepository.BaixarEstoque(item.pecaId!.Value, item.qtdPeca);
+                if (!baixouEstoque)
+                {
+                    throw new InvalidOperationException("Nao foi possivel baixar o estoque de uma das pecas do orcamento.");
+                }
+            }
         }
 
         orcamentoViewModel.total = totalGeral;
 
         await _orcamentoRepository.Update(orcamentoViewModel);
         return RedirectToAction("Details", "Orcamentos", new { id = orcamentoViewModel.idOrcamento });
+    }
+
+    private static void PreencherDadosExibicaoEdicao(OrcamentosViewModel destino, OrcamentosViewModel origem)
+    {
+        destino.nomeFunc = origem.nomeFunc;
+        destino.nome = origem.nome;
+        destino.DocumentoCli = origem.DocumentoCli;
+        destino.TelefoneCli = origem.TelefoneCli;
+        destino.EnderecoCli = origem.EnderecoCli;
+        destino.Placa = string.IsNullOrWhiteSpace(destino.Placa) ? origem.Placa : destino.Placa;
+        destino.Marca = string.IsNullOrWhiteSpace(destino.Marca) ? origem.Marca : destino.Marca;
+        destino.Modelo = string.IsNullOrWhiteSpace(destino.Modelo) ? origem.Modelo : destino.Modelo;
+        destino.Cor = string.IsNullOrWhiteSpace(destino.Cor) ? origem.Cor : destino.Cor;
+        destino.Ano ??= origem.Ano;
+        destino.dataCriacao = origem.dataCriacao;
+        destino.total = origem.total;
     }
 
     [HttpPost]

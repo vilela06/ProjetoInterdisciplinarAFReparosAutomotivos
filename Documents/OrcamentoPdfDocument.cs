@@ -186,14 +186,13 @@ public class OrcamentoPdfDocument : IDocument
                 {
                     decimal taxaAplicada = item.taxa ?? 0m;
                     decimal desconto = item.desconto ?? 0m;
-                    decimal subtotal = (item.preco * item.qtd) * (1 + taxaAplicada) - desconto;
 
                     table.Cell().Element(CellDefault).Text(item.descricao);
                     table.Cell().Element(CellDefault).Text(item.qtd.ToString());
                     table.Cell().Element(CellDefault).Text(item.preco.ToString("C"));
                     table.Cell().Element(CellDefault).Text($"{taxaAplicada * 100:N0}%");
                     table.Cell().Element(CellDefault).Text(desconto.ToString("C"));
-                    table.Cell().Element(CellDefault).Text(subtotal.ToString("C"));
+                    table.Cell().Element(CellDefault).Text(item.preco.ToString("C"));
                 }
             });
         });
@@ -207,16 +206,7 @@ public class OrcamentoPdfDocument : IDocument
 
     private void ComposeTotal(IContainer container)
     {
-        decimal total = Itens.Sum(i => 
-        {
-            decimal taxaAplicada = i.taxa ?? 0m;
-            decimal descontoAplicado = i.desconto ?? 0m;
-
-            decimal precoComTaxa = i.preco * (1 + taxaAplicada);
-            decimal custoTotal = precoComTaxa * i.qtd;
-            
-            return custoTotal - descontoAplicado;
-        });
+        decimal total = Itens.Sum(i => i.preco);
 
         container.AlignRight().Text($"TOTAL: {total:C}")
             .FontSize(16).Bold();

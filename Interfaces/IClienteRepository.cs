@@ -9,5 +9,6 @@ namespace AfReparosAutomotivos.Interfaces
         Task<IEnumerable<Clientes>> Search(string termo);
         Task<Clientes?> GetId(int id);
         Task Update(Clientes cliente);
+        Task DeleteCreated(int id);
     }
 }

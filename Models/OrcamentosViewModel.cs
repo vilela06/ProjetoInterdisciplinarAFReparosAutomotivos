@@ -32,10 +32,12 @@ namespace AfReparosAutomotivos.Models
         public string formaPagamento { get; set; } = string.Empty;
 
         [Display(Name = "Parcelas")]
+        [Range(1, 12, ErrorMessage = "Informe uma quantidade de parcelas entre 1 e 12.")]
         public int parcelas { get; set; }
 
         [Display(Name = "Nome do Cliente")]
         [Required(ErrorMessage = "Informe o nome do cliente.")]
+        [RegularExpression(@"^[^\d]+$", ErrorMessage = "O nome nao pode conter numeros.")]
         public string nome { get; set; } = string.Empty;
 
         [Display(Name = "Nome do Funcionario")]
@@ -48,10 +50,12 @@ namespace AfReparosAutomotivos.Models
         public string DocumentoCli { get; set; } = string.Empty;
 
         [Display(Name = "Telefone")]
+        [RegularExpression(@"^[0-9()\-\s]*$", ErrorMessage = "O telefone nao pode conter letras.")]
         public string? TelefoneCli { get; set; }
 
         [Display(Name = "Celular")]
         [Required(ErrorMessage = "Informe o celular.")]
+        [RegularExpression(@"^[0-9()\-\s]+$", ErrorMessage = "O celular nao pode conter letras.")]
         public string CelularCli { get; set; } = string.Empty;
 
         [Display(Name = "E-mail")]

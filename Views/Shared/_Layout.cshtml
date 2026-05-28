@@ -7,14 +7,12 @@
     <script type="importmap"></script>
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
-    <link rel="stylesheet" href="~/AfReparosAutomotivos.styles.css" asp-append-version="true" />
-    <link rel="stylesheet" href="~/Views/Shared/_Layout.cshtml.css" asp-append-version="true" />
     <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@700&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" integrity="sha512-..." crossorigin="anonymous" referrerpolicy="no-referrer" />
 </head>
 <body class="d-flex flex-column min-vh-100">
-    <header class="af-shell-header">
+    <header class="af-shell-header @(User.Identity?.IsAuthenticated == true ? "af-shell-header-auth" : "af-shell-header-public")">
         <button class="af-menu-button" type="button" aria-label="Menu" id="homebarOpen">
             <i class="fas fa-bars"></i>
         </button>
@@ -37,7 +35,11 @@
                 <a asp-controller="Servicos" asp-action="Index">Serviços</a>
                 <a asp-controller="Pecas" asp-action="Index">Peças</a>
                 <a asp-controller="Clientes" asp-action="Index">Clientes</a>
-                <a asp-controller="Login" asp-action="Logout">Sair</a>
+                @if (User.IsInRole("1"))
+                {
+                    <a asp-controller="Funcionarios" asp-action="Index">Funcionários</a>
+                }
+                <a asp-controller="Login" asp-action="Logout" class="af-logout-link">Sair</a>
             </nav>
         }
     </header>
@@ -55,7 +57,6 @@
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
     <script src="~/js/site.js" asp-append-version="true"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.js"></script>
     <script>
         const homebar = document.getElementById('homebar');
         const homebarOverlay = document.getElementById('homebarOverlay');
