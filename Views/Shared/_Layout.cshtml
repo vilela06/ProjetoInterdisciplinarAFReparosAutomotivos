@@ -24,6 +24,10 @@
             <img src="~/images/logo-af-reparos.png" alt="AF Reparos Automotivos" />
             <nav>
                 <a asp-controller="Home" asp-action="Index">Página inicial</a>
+                @if (User.Identity?.IsAuthenticated == true)
+                {
+                    <a asp-controller="Empresa" asp-action="Index">Dados da empresa</a>
+                }
                 <a asp-controller="Login" asp-action="Index">Entrar como administrador</a>
                 <a asp-controller="Home" asp-action="ClienteOrcamentos">Entrar como cliente</a>
             </nav>

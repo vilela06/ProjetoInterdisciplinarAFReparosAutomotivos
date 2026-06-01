@@ -26,6 +26,7 @@ public class OrcamentosController : Controller
     private readonly IVeiculoRepository _veiculoRepository;
     private readonly IFuncionarioRepository _funcionarioRepository;
     private readonly IPecaRepository _pecaRepository;
+    private readonly IEmpresaRepository _empresaRepository;
     
     /// <summary>
     /// Construtor injetando todos os repositórios necessários.
@@ -38,7 +39,8 @@ public class OrcamentosController : Controller
         IServicoRepository servicoRepository,
         IVeiculoRepository veiculoRepository,
         IFuncionarioRepository funcionarioRepository,
-        IPecaRepository pecaRepository
+        IPecaRepository pecaRepository,
+        IEmpresaRepository empresaRepository
     )
     {
         QuestPDF.Settings.License = LicenseType.Community;
@@ -50,6 +52,7 @@ public class OrcamentosController : Controller
         _veiculoRepository = veiculoRepository;
         _funcionarioRepository = funcionarioRepository;
         _pecaRepository = pecaRepository;
+        _empresaRepository = empresaRepository;
     }
 
     /// <summary>
@@ -348,10 +351,11 @@ public class OrcamentosController : Controller
             }
 
             var clienteAviso = await _clienteRepository.GetId(idCliente);
-            var mensagemAviso = CriarMensagemAvisoCliente(clienteAviso, idOrcamento);
+            var empresaAviso = await _empresaRepository.GetDadosAsync();
+            var mensagemAviso = CriarMensagemAvisoCliente(clienteAviso, idOrcamento, empresaAviso);
             var avisoUrl = CriarLinkAvisoCliente(clienteAviso?.celular ?? orcamentoViewModel.CelularCli, mensagemAviso);
             var emailAviso = string.IsNullOrWhiteSpace(clienteAviso?.email) ? orcamentoViewModel.EmailCli : clienteAviso.email;
-            var avisoEmailUrl = CriarLinkEmailCliente(emailAviso, mensagemAviso);
+            var avisoEmailUrl = CriarLinkEmailCliente(emailAviso, mensagemAviso, empresaAviso?.email);
 
             if (avisoUrl == null)
             {
@@ -418,12 +422,20 @@ public class OrcamentosController : Controller
         }
     }
 
-    private string CriarMensagemAvisoCliente(Clientes? cliente, int idOrcamento)
+    private string CriarMensagemAvisoCliente(Clientes? cliente, int idOrcamento, EmpresaViewModel? empresa)
     {
         var linkConsulta = Url.Action("ClienteOrcamentos", "Home", null, Request.Scheme) ?? string.Empty;
         var chave = string.IsNullOrWhiteSpace(cliente?.chaveCli) ? "nao cadastrada" : cliente.chaveCli;
+        var nomeEmpresa = string.IsNullOrWhiteSpace(empresa?.nomeEmpresa) ? "AF Reparos Automotivos" : empresa.nomeEmpresa;
+        var contato = new[]
+        {
+            string.IsNullOrWhiteSpace(empresa?.celular) ? null : $"Celular: {empresa.celular}",
+            string.IsNullOrWhiteSpace(empresa?.email) ? null : $"E-mail: {empresa.email}"
+        };
+        var contatoTexto = string.Join(" | ", contato.Where(item => !string.IsNullOrWhiteSpace(item)));
+        contatoTexto = string.IsNullOrWhiteSpace(contatoTexto) ? string.Empty : $" Duvidas: {contatoTexto}.";
 
-        return $"Ola! Voce possui um novo orcamento para analisar. Orcamento: {idOrcamento}. Sua chave de acesso: {chave}. Acesse: {linkConsulta}";
+        return $"Ola! A {nomeEmpresa} gerou um novo orcamento para voce analisar. Orcamento: {idOrcamento}. Sua chave de acesso: {chave}. Acesse: {linkConsulta}.{contatoTexto}";
     }
 
     private string? CriarLinkAvisoCliente(string? celular, string mensagem)
@@ -442,7 +454,7 @@ public class OrcamentosController : Controller
         return $"https://wa.me/{numeros}?text={Uri.EscapeDataString(mensagem)}";
     }
 
-    private static string? CriarLinkEmailCliente(string? email, string mensagem)
+    private static string? CriarLinkEmailCliente(string? email, string mensagem, string? emailEmpresa)
     {
         if (string.IsNullOrWhiteSpace(email))
         {
@@ -451,7 +463,8 @@ public class OrcamentosController : Controller
 
         var assunto = Uri.EscapeDataString("Novo orcamento para analisar");
         var corpo = Uri.EscapeDataString(mensagem);
-        return $"mailto:{email}?subject={assunto}&body={corpo}";
+        var copia = string.IsNullOrWhiteSpace(emailEmpresa) ? string.Empty : $"&cc={Uri.EscapeDataString(emailEmpresa)}";
+        return $"mailto:{email}?subject={assunto}&body={corpo}{copia}";
     }
 
     private static string ApenasNumeros(string? valor)

@@ -1,0 +1,54 @@
+@model AfReparosAutomotivos.Models.EmpresaViewModel
+
+@{
+    ViewData["Title"] = "Dados da Empresa";
+    var foto = string.IsNullOrWhiteSpace(Model.fotoUrl)
+        ? Url.Content("~/images/logo-af-reparos.png")
+        : Url.Content(Model.fotoUrl);
+}
+
+<div class="container mt-4">
+    @if (TempData["EmpresaMensagem"] is string mensagem)
+    {
+        <div class="alert alert-warning" role="alert">@mensagem</div>
+    }
+
+    <div class="card shadow-lg rounded-4 border-0">
+        <div class="card-header text-white text-center rounded-top-4" style="background-color: #3b2e1a">
+            <h3 class="mb-0">Dados da Empresa</h3>
+        </div>
+        <div class="card-body p-4">
+            <div class="row g-4 align-items-center">
+                <div class="col-md-4 text-center">
+                    <img src="@foto" alt="@Model.nomeEmpresa" class="img-fluid rounded-3 border p-2 bg-white" style="max-height: 180px;" />
+                </div>
+                <div class="col-md-8">
+                    <dl class="row g-3 mb-0">
+                        <dt class="col-sm-4">Empresa</dt>
+                        <dd class="col-sm-8">@Model.nomeEmpresa</dd>
+
+                        <dt class="col-sm-4">CNPJ</dt>
+                        <dd class="col-sm-8">@Model.cnpj</dd>
+
+                        <dt class="col-sm-4">E-mail</dt>
+                        <dd class="col-sm-8">@Model.email</dd>
+
+                        <dt class="col-sm-4">Celular</dt>
+                        <dd class="col-sm-8">@Model.celular</dd>
+
+                        <dt class="col-sm-4">Endere&ccedil;o</dt>
+                        <dd class="col-sm-8">@Model.enderecoCompleto</dd>
+                    </dl>
+                </div>
+            </div>
+        </div>
+        <div class="card-footer bg-light border-0 pt-3 pb-4 d-flex justify-content-end gap-3">
+            @if (Model.podeEditar)
+            {
+                <a asp-action="Edit" class="btn-login px-4">
+                    <i class="fas fa-pencil-alt"></i> Editar
+                </a>
+            }
+        </div>
+    </div>
+</div>

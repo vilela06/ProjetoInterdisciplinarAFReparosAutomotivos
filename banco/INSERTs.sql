@@ -4,7 +4,7 @@ GO
 -- 20 Pessoas
 INSERT INTO Pessoa (nome, celular, documento, tipo_doc)
 VALUES
-('Carlos Henrique Souza', '(19) 98765-4321', '123.456.789-01', 'F'),
+('AF Reparos Automotivos', '(19) 98765-4321', '12.345.678/0001-10', 'J'),
 ('Mariana Lopes Almeida', '(19) 97654-3210', '234.567.890-12', 'F'),
 ('João Pedro Martins', '(19) 98888-7777', '345.678.901-23', 'F'),
 ('Ana Clara Ribeiro', '(19) 97777-6666', '456.789.012-34', 'F'),
@@ -64,6 +64,12 @@ VALUES
 (6, 2, 'fernandalima', 'fer123', 2),
 (7, 2, 'rafaelmelo', 'rafael123', 2),
 (8, 3, 'patriciarocha', 'pat123', 1)
+GO
+
+UPDATE Funcionario
+SET email = 'contato@afreparos.com',
+    foto = '/images/logo-af-reparos.png'
+WHERE idFuncionario = 1
 GO
 
 -- Herança: Pessoas que são Clientes

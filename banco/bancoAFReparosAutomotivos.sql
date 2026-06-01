@@ -1,3 +1,15 @@
+USE master;
+GO
+
+IF EXISTS (SELECT name FROM sys.databases WHERE name = N'AFReparosAutomotivos')
+BEGIN
+    ALTER DATABASE AFReparosAutomotivos SET SINGLE_USER WITH ROLLBACK IMMEDIATE;
+    DROP DATABASE AFReparosAutomotivos;
+END
+GO
+
+
+
 CREATE DATABASE AFReparosAutomotivos
 GO 
 
@@ -45,6 +57,8 @@ CREATE TABLE Funcionario
 	permissao		INT				NOT NULL	DEFAULT		3								CHECK	(permissao	in	(1, 2, 3)), -- Administrador, escrita ou leitura
 	usuario			VARCHAR(16)		NOT NULL	UNIQUE,
 	senha			VARCHAR(15)		NOT NULL,
+	email			VARCHAR(50)		NULL,
+	foto			VARCHAR(150)	NULL,
 	statusFunc			INT			NOT NULL	DEFAULT		1								CHECK	(statusFunc		in	(1, 2)) -- Ativo ou inativo
 )
 GO

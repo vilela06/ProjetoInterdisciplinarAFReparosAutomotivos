@@ -170,3 +170,6 @@ BEGIN
     INNER JOIN OrcamentosAfetados oa ON oa.orcamentoId = o.idOrcamento;
 END
 GO
+
+
+select * from Cliente

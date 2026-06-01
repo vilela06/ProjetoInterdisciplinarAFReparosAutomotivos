@@ -10,18 +10,17 @@
         <h3 class="mb-0">Funcion&aacute;rios</h3>
         <div class="d-flex flex-column align-items-end gap-2">
             <a asp-action="Create" class="btn btn-primary fw-semibold">Novo Funcion&aacute;rio</a>
-            <form asp-action="Index" method="get" class="d-flex" style="width: 360px; max-width: 100%;">
+            <form asp-action="Index" method="get" class="af-admin-search">
                 <input type="text"
                        name="pesquisa"
                        value="@pesquisa"
-                       class="form-control"
                        placeholder="Buscar por id, nome ou usuario" />
-                <button type="submit" class="btn btn-primary ms-2" aria-label="Pesquisar funcionario">
+                <button type="submit" aria-label="Pesquisar funcionario">
                     <i class="fas fa-search"></i>
                 </button>
                 @if (!string.IsNullOrWhiteSpace(pesquisa))
                 {
-                    <a asp-action="Index" class="btn btn-outline-secondary ms-2" aria-label="Limpar busca">
+                    <a asp-action="Index" class="af-filter-clear" aria-label="Limpar busca">
                         <i class="fas fa-times"></i>
                     </a>
                 }

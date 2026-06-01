@@ -14,18 +14,17 @@
             {
                 <a asp-action="Create" class="btn btn-primary fw-semibold">Nova Peca</a>
             }
-            <form asp-action="Index" method="get" class="d-flex" style="width: 360px; max-width: 100%;">
+            <form asp-action="Index" method="get" class="af-admin-search">
                 <input type="text"
                        name="pesquisa"
                        value="@pesquisa"
-                       class="form-control"
                        placeholder="Buscar por id ou nome" />
-                <button type="submit" class="btn btn-primary ms-2" aria-label="Pesquisar peca">
+                <button type="submit" aria-label="Pesquisar peca">
                     <i class="fas fa-search"></i>
                 </button>
                 @if (!string.IsNullOrWhiteSpace(pesquisa))
                 {
-                    <a asp-action="Index" class="btn btn-outline-secondary ms-2" aria-label="Limpar busca">
+                    <a asp-action="Index" class="af-filter-clear" aria-label="Limpar busca">
                         <i class="fas fa-times"></i>
                     </a>
                 }
