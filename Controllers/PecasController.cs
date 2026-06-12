@@ -2,6 +2,7 @@ using AfReparosAutomotivos.Interfaces;
 using AfReparosAutomotivos.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
 
 namespace AfReparosAutomotivos.Controllers;
 
@@ -46,6 +47,7 @@ public class PecasController : Controller
             return View(peca);
         }
 
+        peca.funcionarioId = GetFuncionarioIdLogado();
         await _pecaRepository.Add(peca);
         return RedirectToAction(nameof(Index));
     }
@@ -67,7 +69,14 @@ public class PecasController : Controller
             return View(peca);
         }
 
+        peca.funcionarioId = GetFuncionarioIdLogado();
         await _pecaRepository.Update(peca);
         return RedirectToAction(nameof(Index));
+    }
+
+    private int GetFuncionarioIdLogado()
+    {
+        var id = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        return int.TryParse(id, out var funcionarioId) ? funcionarioId : 1;
     }
 }

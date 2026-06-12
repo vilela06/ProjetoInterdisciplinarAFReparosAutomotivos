@@ -20,6 +20,8 @@
         </div>
 
         <div class="card-body">
+            <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
             <dl class="row">
                 <dt class="col-sm-4">Cliente</dt>
                 <dd class="col-sm-8">@Model.nome</dd>
@@ -43,7 +45,10 @@
                 <dd class="col-sm-8 fw-bold">@statusTexto</dd>
 
                 <dt class="col-sm-4">Forma de pagamento</dt>
-                <dd class="col-sm-8">@Model.formaPagamento</dd>
+                <dd class="col-sm-8">@(string.IsNullOrWhiteSpace(Model.formaPagamento) ? "A definir" : Model.formaPagamento)</dd>
+
+                <dt class="col-sm-4">Parcelas</dt>
+                <dd class="col-sm-8">@(Model.parcelas > 0 ? (Model.parcelas == 1 ? "A vista" : $"{Model.parcelas} x") : "A definir")</dd>
 
                 <dt class="col-sm-4">Total</dt>
                 <dd class="col-sm-8 fw-bold">@Model.total.ToString("C2")</dd>
@@ -85,10 +90,31 @@
 
             @if (Model.status == 1)
             {
-                <form asp-action="ClienteOrcamentoStatus" method="post">
+                <form asp-action="ClienteOrcamentoStatus" method="post" class="d-flex align-items-end gap-2 flex-wrap">
                     <input type="hidden" name="id" value="@Model.idOrcamento" />
                     <input type="hidden" name="chave" value="@chaveAcesso" />
                     <input type="hidden" name="decisao" value="aprovar" />
+                    <label class="mb-0">
+                        Forma de pagamento
+                        <select name="formaPagamento" class="form-select form-select-sm" required>
+                            <option value="">Selecione...</option>
+                            <option value="Dinheiro" selected="@(Model.formaPagamento == "Dinheiro")">Dinheiro</option>
+                            <option value="Pix" selected="@(Model.formaPagamento == "Pix")">Pix</option>
+                            <option value="Cartao de debito" selected="@(Model.formaPagamento == "Cartao de debito")">Cartao de debito</option>
+                            <option value="Cartao de credito" selected="@(Model.formaPagamento == "Cartao de credito")">Cartao de credito</option>
+                        </select>
+                    </label>
+                    <label class="mb-0">
+                        Parcelas
+                        <select name="parcelas" class="form-select form-select-sm" required>
+                            <option value="">Selecione...</option>
+                            <option value="1" selected="@(Model.parcelas == 1)">A vista</option>
+                            @for (var parcela = 2; parcela <= 12; parcela++)
+                            {
+                                <option value="@parcela" selected="@(Model.parcelas == parcela)">@parcela x</option>
+                            }
+                        </select>
+                    </label>
                     <button type="submit" class="btn btn-success">Aprovar</button>
                 </form>
 

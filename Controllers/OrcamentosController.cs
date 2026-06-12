@@ -185,7 +185,6 @@ public class OrcamentosController : Controller
         int? veiculoCriadoId = null;
         int? orcamentoCriadoId = null;
         var servicosCriados = new List<int>();
-        var baixasEstoque = new List<(int pecaId, int quantidade)>();
 
         try
         {
@@ -337,17 +336,6 @@ public class OrcamentosController : Controller
                 }
 
                 await _itemRepository.Add(listaEntidadesItens);
-
-                foreach (var item in listaEntidadesItens.Where(item => item.pecaId.HasValue))
-                {
-                    var baixouEstoque = await _pecaRepository.BaixarEstoque(item.pecaId!.Value, item.qtdPeca);
-                    if (!baixouEstoque)
-                    {
-                        throw new InvalidOperationException("Nao foi possivel baixar o estoque de uma das pecas do orcamento.");
-                    }
-
-                    baixasEstoque.Add((item.pecaId!.Value, item.qtdPeca));
-                }
             }
 
             var clienteAviso = await _clienteRepository.GetId(idCliente);
@@ -376,7 +364,7 @@ public class OrcamentosController : Controller
         }
         catch (Exception ex)
         {
-            await DesfazerCriacaoOrcamentoAsync(orcamentoCriadoId, baixasEstoque, servicosCriados, veiculoCriadoId, clienteCriadoId);
+            await DesfazerCriacaoOrcamentoAsync(orcamentoCriadoId, servicosCriados, veiculoCriadoId, clienteCriadoId);
 
             var erro = new Modal
             {
@@ -391,16 +379,10 @@ public class OrcamentosController : Controller
 
     private async Task DesfazerCriacaoOrcamentoAsync(
         int? orcamentoId,
-        List<(int pecaId, int quantidade)> baixasEstoque,
         List<int> servicosCriados,
         int? veiculoId,
         int? clienteId)
     {
-        foreach (var baixa in baixasEstoque)
-        {
-            await _pecaRepository.ReporEstoque(baixa.pecaId, baixa.quantidade);
-        }
-
         if (orcamentoId.HasValue)
         {
             await _orcamentoRepository.Delete(orcamentoId.Value);
@@ -677,8 +659,7 @@ public class OrcamentosController : Controller
                 valorPeca = (peca?.valor ?? 0m) * Math.Max(1, item.qtdPeca);
             }
 
-            var custoTotal = ((item.preco * item.qtd) + valorPeca) * (1 + item.taxa);
-            var valorItemFinal = custoTotal - item.desconto;
+            var valorItemFinal = Math.Max(0, (item.preco * item.qtd) + valorPeca + item.taxa - item.desconto);
             item.preco = valorItemFinal;
 
             totalGeral += valorItemFinal;
@@ -711,28 +692,14 @@ public class OrcamentosController : Controller
                     data_entrega = itemViewModel.data_entrega,
                     preco = itemViewModel.preco,
                     descricao = itemViewModel.observacao,
-                    taxa = 0m,
-                    desconto = 0m
+                    taxa = itemViewModel.taxa,
+                    desconto = itemViewModel.desconto
                 };
                 
                 listaEntidadesItens.Add(itemEntidade);
             }
 
             await _itemRepository.Update(listaEntidadesItens);
-
-            foreach (var item in itensAtuais.Where(item => item.pecaId.HasValue && item.qtdPeca > 0))
-            {
-                await _pecaRepository.ReporEstoque(item.pecaId!.Value, item.qtdPeca);
-            }
-
-            foreach (var item in listaEntidadesItens.Where(item => item.pecaId.HasValue && item.qtdPeca > 0))
-            {
-                var baixouEstoque = await _pecaRepository.BaixarEstoque(item.pecaId!.Value, item.qtdPeca);
-                if (!baixouEstoque)
-                {
-                    throw new InvalidOperationException("Nao foi possivel baixar o estoque de uma das pecas do orcamento.");
-                }
-            }
         }
 
         orcamentoViewModel.total = totalGeral;
@@ -771,15 +738,6 @@ public class OrcamentosController : Controller
         {
             TempData["OrcamentoMensagem"] = "Este orcamento nao pode ser excluido por estar aprovado, em execucao ou finalizado.";
             return RedirectToAction("Index");
-        }
-
-        var itens = await _itemRepository.GetByOrcamento(id);
-        if (orcamento.status == 1)
-        {
-            foreach (var item in itens.Where(item => item.pecaId.HasValue && item.qtdPeca > 0))
-            {
-                await _pecaRepository.ReporEstoque(item.pecaId!.Value, item.qtdPeca);
-            }
         }
 
         await _orcamentoRepository.Delete(id);

@@ -16,28 +16,12 @@ namespace AfReparosAutomotivos.Repositories
             await using var transaction = (SqlTransaction)await connection.BeginTransactionAsync();
             try
             {
-                var tipoDoc = cliente.tipo_doc ?? (cliente.documento.Length == 14 ? 'J' : 'F');
-                await using var pessoaCommand = new SqlCommand(
-                    "INSERT INTO Pessoa (nome, celular, documento, tipo_doc) OUTPUT INSERTED.idPessoa VALUES (@nome, @celular, @documento, @tipo_doc)",
-                    connection, transaction);
-                pessoaCommand.Parameters.AddWithValue("@nome", cliente.nome);
-                pessoaCommand.Parameters.AddWithValue("@celular", cliente.celular);
-                pessoaCommand.Parameters.AddWithValue("@documento", cliente.documento);
-                pessoaCommand.Parameters.AddWithValue("@tipo_doc", tipoDoc);
-                var id = Convert.ToInt32(await pessoaCommand.ExecuteScalarAsync());
-
-                await using var clienteCommand = new SqlCommand(
-                    "INSERT INTO Cliente (idCliente, telefone, email, statusCli, chaveCli) VALUES (@id, @telefone, @email, 1, @chave)",
-                    connection, transaction);
-                clienteCommand.Parameters.AddWithValue("@id", id);
-                clienteCommand.Parameters.Add("@telefone", SqlDbType.VarChar, 14).Value =
-                    string.IsNullOrWhiteSpace(cliente.telefone) ? DBNull.Value : cliente.telefone;
-                clienteCommand.Parameters.AddWithValue("@email", string.IsNullOrWhiteSpace(cliente.email) ? $"{id}@sem-email.local" : cliente.email);
-                clienteCommand.Parameters.AddWithValue("@chave", Guid.NewGuid().ToString("N")[..19]);
-                await clienteCommand.ExecuteNonQueryAsync();
-
-                await UpsertEndereco(connection, transaction, id, cliente);
-
+                await using var command = new SqlCommand("SP_AdicionarCliente", connection, transaction)
+                {
+                    CommandType = CommandType.StoredProcedure
+                };
+                AddClienteParameters(command, cliente, includeId: false);
+                var id = Convert.ToInt32(await command.ExecuteScalarAsync());
                 await transaction.CommitAsync();
                 return id;
             }
@@ -48,47 +32,23 @@ namespace AfReparosAutomotivos.Repositories
             }
         }
 
-        public async Task<IEnumerable<Clientes>> GetAllAsync()
+        public Task<IEnumerable<Clientes>> GetAllAsync() => ExecuteClienteProcedure("SP_ListarClientes");
+
+        public Task<IEnumerable<Clientes>> Search(string termo) => ExecuteClienteProcedure("SP_BuscarClientes", command =>
         {
-            var clientes = new List<Clientes>();
-            await using var connection = CreateConnection();
-            await connection.OpenAsync();
-            await using var command = new SqlCommand(BaseSelect() + " ORDER BY p.nome", connection);
-            await using var reader = await command.ExecuteReaderAsync();
-            while (await reader.ReadAsync())
-            {
-                clientes.Add(Map(reader));
-            }
-
-            return clientes;
-        }
-
-        public async Task<IEnumerable<Clientes>> Search(string termo)
-        {
-            var clientes = new List<Clientes>();
-            await using var connection = CreateConnection();
-            await connection.OpenAsync();
-            await using var command = new SqlCommand(
-                BaseSelect() +
-                " WHERE p.nome LIKE @termo OR CONVERT(VARCHAR(20), c.idCliente) LIKE @termo " +
-                "ORDER BY p.nome",
-                connection);
-            command.Parameters.AddWithValue("@termo", $"%{termo?.Trim()}%");
-            await using var reader = await command.ExecuteReaderAsync();
-            while (await reader.ReadAsync())
-            {
-                clientes.Add(Map(reader));
-            }
-
-            return clientes;
-        }
+            command.Parameters.Add("@termo", SqlDbType.VarChar, 80).Value =
+                string.IsNullOrWhiteSpace(termo) ? DBNull.Value : termo.Trim();
+        });
 
         public async Task<Clientes?> GetId(int id)
         {
             await using var connection = CreateConnection();
             await connection.OpenAsync();
-            await using var command = new SqlCommand(BaseSelect() + " WHERE c.idCliente = @id", connection);
-            command.Parameters.AddWithValue("@id", id);
+            await using var command = new SqlCommand("SP_ObterClientePorId", connection)
+            {
+                CommandType = CommandType.StoredProcedure
+            };
+            command.Parameters.Add("@id", SqlDbType.Int).Value = id;
             await using var reader = await command.ExecuteReaderAsync();
             return await reader.ReadAsync() ? Map(reader) : null;
         }
@@ -100,31 +60,12 @@ namespace AfReparosAutomotivos.Repositories
             await using var transaction = (SqlTransaction)await connection.BeginTransactionAsync();
             try
             {
-                await using (var pessoaCommand = new SqlCommand(
-                    "UPDATE Pessoa SET nome = @nome, celular = @celular, documento = @documento, tipo_doc = @tipo_doc WHERE idPessoa = @id",
-                    connection, transaction))
+                await using var command = new SqlCommand("SP_AtualizarCliente", connection, transaction)
                 {
-                    pessoaCommand.Parameters.AddWithValue("@id", cliente.id);
-                    pessoaCommand.Parameters.AddWithValue("@nome", cliente.nome);
-                    pessoaCommand.Parameters.AddWithValue("@celular", cliente.celular);
-                    pessoaCommand.Parameters.AddWithValue("@documento", cliente.documento);
-                    pessoaCommand.Parameters.AddWithValue("@tipo_doc", cliente.tipo_doc ?? (cliente.documento.Length == 14 ? 'J' : 'F'));
-                    await pessoaCommand.ExecuteNonQueryAsync();
-                }
-
-                await using (var clienteCommand = new SqlCommand(
-                    "UPDATE Cliente SET telefone = @telefone, email = @email WHERE idCliente = @id",
-                    connection, transaction))
-                {
-                    clienteCommand.Parameters.AddWithValue("@id", cliente.id);
-                    clienteCommand.Parameters.Add("@telefone", SqlDbType.VarChar, 14).Value =
-                        string.IsNullOrWhiteSpace(cliente.telefone) ? DBNull.Value : cliente.telefone;
-                    clienteCommand.Parameters.AddWithValue("@email", string.IsNullOrWhiteSpace(cliente.email) ? $"{cliente.id}@sem-email.local" : cliente.email);
-                    await clienteCommand.ExecuteNonQueryAsync();
-                }
-
-                await UpsertEndereco(connection, transaction, cliente.id, cliente);
-
+                    CommandType = CommandType.StoredProcedure
+                };
+                AddClienteParameters(command, cliente, includeId: true);
+                await command.ExecuteNonQueryAsync();
                 await transaction.CommitAsync();
             }
             catch
@@ -141,18 +82,12 @@ namespace AfReparosAutomotivos.Repositories
             await using var transaction = (SqlTransaction)await connection.BeginTransactionAsync();
             try
             {
-                await using (var clienteCommand = new SqlCommand("DELETE FROM Cliente WHERE idCliente = @id", connection, transaction))
+                await using var command = new SqlCommand("SP_ExcluirClienteCriado", connection, transaction)
                 {
-                    clienteCommand.Parameters.AddWithValue("@id", id);
-                    await clienteCommand.ExecuteNonQueryAsync();
-                }
-
-                await using (var pessoaCommand = new SqlCommand("DELETE FROM Pessoa WHERE idPessoa = @id", connection, transaction))
-                {
-                    pessoaCommand.Parameters.AddWithValue("@id", id);
-                    await pessoaCommand.ExecuteNonQueryAsync();
-                }
-
+                    CommandType = CommandType.StoredProcedure
+                };
+                command.Parameters.Add("@id", SqlDbType.Int).Value = id;
+                await command.ExecuteNonQueryAsync();
                 await transaction.CommitAsync();
             }
             catch
@@ -162,12 +97,52 @@ namespace AfReparosAutomotivos.Repositories
             }
         }
 
-        private static string BaseSelect() =>
-            "SELECT c.idCliente, p.nome, p.documento, c.telefone, p.celular, c.email, c.statusCli, c.chaveCli, p.tipo_doc, " +
-            "COALESCE(e.logradouro + ', ' + e.numero + ', ' + e.cidade + ' - ' + e.estado + ', ' + e.CEP, '') AS endereco, " +
-            "COALESCE(e.logradouro, ''), COALESCE(e.numero, ''), COALESCE(e.cidade, ''), COALESCE(e.estado, ''), COALESCE(e.CEP, '') " +
-            "FROM Cliente c INNER JOIN Pessoa p ON p.idPessoa = c.idCliente " +
-            "LEFT JOIN Endereco e ON e.pessoaId = p.idPessoa";
+        private async Task<IEnumerable<Clientes>> ExecuteClienteProcedure(string procedure, Action<SqlCommand>? configure = null)
+        {
+            var clientes = new List<Clientes>();
+            await using var connection = CreateConnection();
+            await connection.OpenAsync();
+            await using var command = new SqlCommand(procedure, connection)
+            {
+                CommandType = CommandType.StoredProcedure
+            };
+            configure?.Invoke(command);
+
+            await using var reader = await command.ExecuteReaderAsync();
+            while (await reader.ReadAsync())
+            {
+                clientes.Add(Map(reader));
+            }
+
+            return clientes;
+        }
+
+        private static void AddClienteParameters(SqlCommand command, Clientes cliente, bool includeId)
+        {
+            if (includeId)
+            {
+                command.Parameters.Add("@id", SqlDbType.Int).Value = cliente.id;
+            }
+
+            command.Parameters.Add("@nome", SqlDbType.VarChar, 50).Value = cliente.nome;
+            command.Parameters.Add("@celular", SqlDbType.VarChar, 15).Value = cliente.celular;
+            command.Parameters.Add("@documento", SqlDbType.VarChar, 18).Value = cliente.documento;
+            command.Parameters.Add("@tipo_doc", SqlDbType.Char, 1).Value = cliente.tipo_doc ?? (cliente.documento.Length == 14 ? 'J' : 'F');
+            command.Parameters.Add("@telefone", SqlDbType.VarChar, 14).Value =
+                string.IsNullOrWhiteSpace(cliente.telefone) ? DBNull.Value : cliente.telefone;
+            command.Parameters.Add("@email", SqlDbType.VarChar, 50).Value =
+                string.IsNullOrWhiteSpace(cliente.email) ? DBNull.Value : cliente.email;
+            command.Parameters.Add("@logradouro", SqlDbType.VarChar, 150).Value =
+                string.IsNullOrWhiteSpace(cliente.logradouro) ? DBNull.Value : cliente.logradouro;
+            command.Parameters.Add("@numero", SqlDbType.VarChar, 5).Value =
+                string.IsNullOrWhiteSpace(cliente.numero) ? DBNull.Value : cliente.numero;
+            command.Parameters.Add("@cidade", SqlDbType.VarChar, 100).Value =
+                string.IsNullOrWhiteSpace(cliente.cidade) ? DBNull.Value : cliente.cidade;
+            command.Parameters.Add("@estado", SqlDbType.VarChar, 2).Value =
+                string.IsNullOrWhiteSpace(cliente.estado) ? DBNull.Value : cliente.estado;
+            command.Parameters.Add("@cep", SqlDbType.VarChar, 9).Value =
+                string.IsNullOrWhiteSpace(cliente.cep) ? DBNull.Value : cliente.cep;
+        }
 
         private static Clientes Map(SqlDataReader reader) => new()
         {
@@ -187,31 +162,5 @@ namespace AfReparosAutomotivos.Repositories
             estado = reader.GetString(13),
             cep = reader.GetString(14)
         };
-
-        private static async Task UpsertEndereco(SqlConnection connection, SqlTransaction transaction, int pessoaId, Clientes cliente)
-        {
-            if (string.IsNullOrWhiteSpace(cliente.logradouro) &&
-                string.IsNullOrWhiteSpace(cliente.numero) &&
-                string.IsNullOrWhiteSpace(cliente.cidade) &&
-                string.IsNullOrWhiteSpace(cliente.estado) &&
-                string.IsNullOrWhiteSpace(cliente.cep))
-            {
-                return;
-            }
-
-            await using var command = new SqlCommand(
-                "MERGE Endereco AS destino " +
-                "USING (SELECT @id AS pessoaId) AS origem ON destino.pessoaId = origem.pessoaId " +
-                "WHEN MATCHED THEN UPDATE SET logradouro = @logradouro, numero = @numero, cidade = @cidade, estado = @estado, CEP = @cep " +
-                "WHEN NOT MATCHED THEN INSERT (pessoaId, logradouro, numero, cidade, estado, CEP) VALUES (@id, @logradouro, @numero, @cidade, @estado, @cep);",
-                connection, transaction);
-            command.Parameters.AddWithValue("@id", pessoaId);
-            command.Parameters.AddWithValue("@logradouro", cliente.logradouro);
-            command.Parameters.AddWithValue("@numero", cliente.numero);
-            command.Parameters.AddWithValue("@cidade", cliente.cidade);
-            command.Parameters.AddWithValue("@estado", cliente.estado);
-            command.Parameters.AddWithValue("@cep", cliente.cep);
-            await command.ExecuteNonQueryAsync();
-        }
     }
 }

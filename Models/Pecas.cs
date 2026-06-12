@@ -6,6 +6,8 @@ namespace AfReparosAutomotivos.Models
     {
         public int idPeca { get; set; }
 
+        public int funcionarioId { get; set; }
+
         [Required]
         [StringLength(20)]
         [Display(Name = "Peça")]
@@ -18,5 +20,8 @@ namespace AfReparosAutomotivos.Models
         [Range(0, int.MaxValue)]
         [Display(Name = "Estoque")]
         public int qtdEsto { get; set; }
+
+        [Display(Name = "FuncionÃ¡rio")]
+        public string nomeFuncionario { get; set; } = string.Empty;
     }
 }

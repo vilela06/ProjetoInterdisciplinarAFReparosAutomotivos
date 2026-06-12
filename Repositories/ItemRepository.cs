@@ -1,6 +1,7 @@
 using AfReparosAutomotivos.Interfaces;
 using AfReparosAutomotivos.Models;
 using Microsoft.Data.SqlClient;
+using System.Data;
 
 namespace AfReparosAutomotivos.Repositories
 {
@@ -10,23 +11,25 @@ namespace AfReparosAutomotivos.Repositories
 
         public async Task Add(IEnumerable<Item> itens)
         {
-            await using var connection = CreateConnection();
-            await connection.OpenAsync();
-            foreach (var item in itens)
+            var lista = itens.ToList();
+            if (!lista.Any())
             {
-                await using var command = InsertCommand(connection);
-                FillInsertParameters(command, item);
-                await command.ExecuteNonQueryAsync();
+                return;
             }
-        }
 
-        private async Task DeleteByOrcamento(int orcamentoId)
-        {
             await using var connection = CreateConnection();
             await connection.OpenAsync();
-            await using var command = new SqlCommand("DELETE FROM Itens WHERE orcamentoId = @orcamentoId", connection);
-            command.Parameters.AddWithValue("@orcamentoId", orcamentoId);
-            await command.ExecuteNonQueryAsync();
+            await using var transaction = (SqlTransaction)await connection.BeginTransactionAsync();
+            try
+            {
+                await AddItens(connection, transaction, lista);
+                await transaction.CommitAsync();
+            }
+            catch
+            {
+                await transaction.RollbackAsync();
+                throw;
+            }
         }
 
         public async Task<IEnumerable<Item>> GetByOrcamento(int orcamentoId)
@@ -34,15 +37,13 @@ namespace AfReparosAutomotivos.Repositories
             var itens = new List<Item>();
             await using var connection = CreateConnection();
             await connection.OpenAsync();
-            await using var command = new SqlCommand(
-                "SELECT i.orcamentoId, i.servicoId, i.funcionarioID, i.pecaId, i.qtd, i.preco, i.desconto, i.dataEntrega, " +
-                "s.descricao, o.veiculoId " +
-                "FROM Itens i INNER JOIN Servico s ON s.idServico = i.servicoId " +
-                "INNER JOIN Orcamento o ON o.idOrcamento = i.orcamentoId " +
-                "WHERE i.orcamentoId = @orcamentoId",
-                connection);
-            command.Parameters.AddWithValue("@orcamentoId", orcamentoId);
+            await using var command = new SqlCommand("SP_ListarItensOrcamento", connection)
+            {
+                CommandType = CommandType.StoredProcedure
+            };
+            command.Parameters.Add("@orcamentoId", SqlDbType.Int).Value = orcamentoId;
             await using var reader = await command.ExecuteReaderAsync();
+
             var index = 1;
             while (await reader.ReadAsync())
             {
@@ -55,12 +56,12 @@ namespace AfReparosAutomotivos.Repositories
                     pecaId = reader.IsDBNull(3) ? null : reader.GetInt32(3),
                     qtd = reader.GetInt32(4),
                     preco = reader.GetDecimal(5),
-                    desconto = reader.IsDBNull(3) ? (reader.IsDBNull(6) ? 0m : reader.GetDecimal(6)) : 0m,
-                    dataEntrega = reader.IsDBNull(7) ? null : reader.GetDateTime(7),
-                    descricao = reader.GetString(8),
-                    idVeiculo = reader.GetInt32(9),
-                    qtdPeca = reader.IsDBNull(3) ? 0 : Math.Max(1, Convert.ToInt32(reader.IsDBNull(6) ? 1m : reader.GetDecimal(6))),
-                    taxa = 0m
+                    desconto = reader.IsDBNull(6) ? 0m : reader.GetDecimal(6),
+                    taxa = reader.IsDBNull(7) ? 0m : reader.GetDecimal(7),
+                    qtdPeca = reader.IsDBNull(8) ? 0 : reader.GetInt32(8),
+                    dataEntrega = reader.IsDBNull(9) ? null : reader.GetDateTime(9),
+                    descricao = reader.GetString(10),
+                    idVeiculo = reader.GetInt32(11)
                 });
             }
 
@@ -76,25 +77,63 @@ namespace AfReparosAutomotivos.Repositories
                 return;
             }
 
-            await DeleteByOrcamento(orcamentoId.Value);
-            await Add(lista);
+            await using var connection = CreateConnection();
+            await connection.OpenAsync();
+            await using var transaction = (SqlTransaction)await connection.BeginTransactionAsync();
+            try
+            {
+                await DeleteByOrcamento(connection, transaction, orcamentoId.Value);
+                await AddItens(connection, transaction, lista);
+                await transaction.CommitAsync();
+            }
+            catch
+            {
+                await transaction.RollbackAsync();
+                throw;
+            }
         }
 
-        private static SqlCommand InsertCommand(SqlConnection connection) => new(
-            "INSERT INTO Itens (orcamentoId, servicoId, funcionarioID, pecaId, qtd, preco, desconto, dataEntrega) " +
-            "VALUES (@orcamentoId, @servicoId, @funcionarioID, @pecaId, @qtd, @preco, @desconto, @dataEntrega)",
-            connection);
+        private static async Task DeleteByOrcamento(SqlConnection connection, SqlTransaction transaction, int orcamentoId)
+        {
+            await using var command = new SqlCommand("SP_ExcluirItensOrcamento", connection, transaction)
+            {
+                CommandType = CommandType.StoredProcedure
+            };
+            command.Parameters.Add("@orcamentoId", SqlDbType.Int).Value = orcamentoId;
+            await command.ExecuteNonQueryAsync();
+        }
+
+        private static async Task AddItens(SqlConnection connection, SqlTransaction transaction, IEnumerable<Item> itens)
+        {
+            foreach (var item in itens)
+            {
+                await using var command = new SqlCommand("SP_AdicionarItemOrcamento", connection, transaction)
+                {
+                    CommandType = CommandType.StoredProcedure
+                };
+                FillInsertParameters(command, item);
+                await command.ExecuteNonQueryAsync();
+            }
+        }
 
         private static void FillInsertParameters(SqlCommand command, Item item)
         {
-            command.Parameters.AddWithValue("@orcamentoId", item.orcamentoId);
-            command.Parameters.AddWithValue("@servicoId", item.servicoId);
-            command.Parameters.AddWithValue("@funcionarioID", item.funcionarioId);
-            command.Parameters.AddWithValue("@pecaId", (object?)item.pecaId ?? DBNull.Value);
-            command.Parameters.AddWithValue("@qtd", item.qtd <= 0 ? 1 : item.qtd);
-            command.Parameters.AddWithValue("@preco", item.preco);
-            command.Parameters.AddWithValue("@desconto", item.pecaId.HasValue ? item.qtdPeca : (object?)item.desconto ?? DBNull.Value);
-            command.Parameters.AddWithValue("@dataEntrega", (object?)item.dataEntrega ?? DBNull.Value);
+            command.Parameters.Add("@orcamentoId", SqlDbType.Int).Value = item.orcamentoId;
+            command.Parameters.Add("@servicoId", SqlDbType.Int).Value = item.servicoId;
+            command.Parameters.Add("@funcionarioID", SqlDbType.Int).Value = item.funcionarioId;
+            command.Parameters.Add("@pecaId", SqlDbType.Int).Value = (object?)item.pecaId ?? DBNull.Value;
+            command.Parameters.Add("@qtd", SqlDbType.Int).Value = item.qtd <= 0 ? 1 : item.qtd;
+            command.Parameters.Add("@qtdPeca", SqlDbType.Int).Value = item.pecaId.HasValue ? Math.Max(1, item.qtdPeca) : DBNull.Value;
+            command.Parameters.Add("@preco", SqlDbType.Money).Value = item.preco;
+            var desconto = command.Parameters.Add("@desconto", SqlDbType.Decimal);
+            desconto.Precision = 10;
+            desconto.Scale = 2;
+            desconto.Value = (object?)item.desconto ?? DBNull.Value;
+            var taxa = command.Parameters.Add("@taxa", SqlDbType.Decimal);
+            taxa.Precision = 10;
+            taxa.Scale = 2;
+            taxa.Value = (object?)item.taxa ?? DBNull.Value;
+            command.Parameters.Add("@dataEntrega", SqlDbType.DateTime).Value = (object?)item.dataEntrega ?? DBNull.Value;
         }
     }
 }

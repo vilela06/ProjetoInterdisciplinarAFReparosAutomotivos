@@ -28,11 +28,9 @@ namespace AfReparosAutomotivos.Models
         public decimal total { get; set; }
 
         [Display(Name = "Forma de Pagamento")]
-        [Required(ErrorMessage = "Informe a forma de pagamento.")]
         public string formaPagamento { get; set; } = string.Empty;
 
         [Display(Name = "Parcelas")]
-        [Range(1, 12, ErrorMessage = "Informe uma quantidade de parcelas entre 1 e 12.")]
         public int parcelas { get; set; }
 
         [Display(Name = "Nome do Cliente")]

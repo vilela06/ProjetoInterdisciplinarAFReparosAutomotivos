@@ -1,6 +1,7 @@
 using AfReparosAutomotivos.Interfaces;
 using AfReparosAutomotivos.Models;
 using Microsoft.Data.SqlClient;
+using System.Data;
 
 namespace AfReparosAutomotivos.Repositories
 {
@@ -12,15 +13,11 @@ namespace AfReparosAutomotivos.Repositories
         {
             await using var connection = CreateConnection();
             await connection.OpenAsync();
-            await using var command = new SqlCommand(
-                "INSERT INTO Veiculo (clienteId, marca, placa, modelo, cor, ano) OUTPUT INSERTED.idVeiculo VALUES (@clienteId, @marca, @placa, @modelo, @cor, @ano)",
-                connection);
-            command.Parameters.AddWithValue("@clienteId", veiculo.clienteId);
-            command.Parameters.AddWithValue("@marca", veiculo.marca);
-            command.Parameters.AddWithValue("@placa", veiculo.placa);
-            command.Parameters.AddWithValue("@modelo", veiculo.modelo);
-            command.Parameters.AddWithValue("@cor", veiculo.cor);
-            command.Parameters.AddWithValue("@ano", veiculo.ano);
+            await using var command = new SqlCommand("SP_AdicionarVeiculo", connection)
+            {
+                CommandType = CommandType.StoredProcedure
+            };
+            AddVeiculoParameters(command, veiculo);
             return Convert.ToInt32(await command.ExecuteScalarAsync());
         }
 
@@ -28,8 +25,11 @@ namespace AfReparosAutomotivos.Repositories
         {
             await using var connection = CreateConnection();
             await connection.OpenAsync();
-            await using var command = new SqlCommand("SELECT idVeiculo, clienteId, placa, marca, modelo, cor, ano FROM Veiculo WHERE idVeiculo = @id", connection);
-            command.Parameters.AddWithValue("@id", id);
+            await using var command = new SqlCommand("SP_ObterVeiculoPorId", connection)
+            {
+                CommandType = CommandType.StoredProcedure
+            };
+            command.Parameters.Add("@id", SqlDbType.Int).Value = id;
             await using var reader = await command.ExecuteReaderAsync();
             return await reader.ReadAsync() ? Map(reader) : null;
         }
@@ -39,13 +39,13 @@ namespace AfReparosAutomotivos.Repositories
             var veiculos = new List<Veiculos>();
             await using var connection = CreateConnection();
             await connection.OpenAsync();
-            await using var command = new SqlCommand(
-                "SELECT idVeiculo, clienteId, placa, marca, modelo, cor, ano FROM Veiculo " +
-                "WHERE clienteId = @clienteId AND (placa LIKE @termo OR marca LIKE @termo OR modelo LIKE @termo OR cor LIKE @termo OR CONVERT(VARCHAR(10), ano) LIKE @termo) " +
-                "ORDER BY placa",
-                connection);
-            command.Parameters.AddWithValue("@clienteId", clienteId);
-            command.Parameters.AddWithValue("@termo", $"%{termo?.Trim()}%");
+            await using var command = new SqlCommand("SP_BuscarVeiculosCliente", connection)
+            {
+                CommandType = CommandType.StoredProcedure
+            };
+            command.Parameters.Add("@clienteId", SqlDbType.Int).Value = clienteId;
+            command.Parameters.Add("@termo", SqlDbType.VarChar, 50).Value =
+                string.IsNullOrWhiteSpace(termo) ? DBNull.Value : termo.Trim();
             await using var reader = await command.ExecuteReaderAsync();
             while (await reader.ReadAsync())
             {
@@ -59,9 +59,22 @@ namespace AfReparosAutomotivos.Repositories
         {
             await using var connection = CreateConnection();
             await connection.OpenAsync();
-            await using var command = new SqlCommand("DELETE FROM Veiculo WHERE idVeiculo = @id", connection);
-            command.Parameters.AddWithValue("@id", id);
+            await using var command = new SqlCommand("SP_ExcluirVeiculoCriado", connection)
+            {
+                CommandType = CommandType.StoredProcedure
+            };
+            command.Parameters.Add("@id", SqlDbType.Int).Value = id;
             await command.ExecuteNonQueryAsync();
+        }
+
+        private static void AddVeiculoParameters(SqlCommand command, Veiculos veiculo)
+        {
+            command.Parameters.Add("@clienteId", SqlDbType.Int).Value = veiculo.clienteId;
+            command.Parameters.Add("@marca", SqlDbType.VarChar, 50).Value = veiculo.marca;
+            command.Parameters.Add("@placa", SqlDbType.VarChar, 7).Value = veiculo.placa;
+            command.Parameters.Add("@modelo", SqlDbType.VarChar, 50).Value = veiculo.modelo;
+            command.Parameters.Add("@cor", SqlDbType.VarChar, 20).Value = veiculo.cor;
+            command.Parameters.Add("@ano", SqlDbType.Int).Value = veiculo.ano;
         }
 
         private static Veiculos Map(SqlDataReader reader) => new()

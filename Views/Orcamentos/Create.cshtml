@@ -149,17 +149,18 @@
             <label>Modelo:<span class="af-required">*</span><input asp-for="Modelo" id="modeloVeiculo" required /></label>
             <label>Cor:<span class="af-required">*</span><input asp-for="Cor" id="corVeiculo" maxlength="20" required /></label>
             <label>Ano:<span class="af-required">*</span><input asp-for="Ano" id="anoVeiculo" type="number" min="1886" max="9999" required /></label>
-            <label>Forma de pagamento:<span class="af-required">*</span>
-                <select asp-for="formaPagamento" required>
-                    <option value="">Selecione...</option>
+            <label>Forma de pagamento:
+                <select asp-for="formaPagamento">
+                    <option value="">Selecionar depois</option>
                     <option value="Dinheiro">Dinheiro</option>
                     <option value="Pix">Pix</option>
                     <option value="Cartao de debito">Cartao de debito</option>
                     <option value="Cartao de credito">Cartao de credito</option>
                 </select>
             </label>
-            <label>Parcelas:<span class="af-required">*</span>
-                <select asp-for="parcelas" required>
+            <label>Parcelas:
+                <select asp-for="parcelas">
+                    <option value="0">Selecionar depois</option>
                     <option value="1">A vista</option>
                     @for (var parcela = 2; parcela <= 12; parcela++)
                     {

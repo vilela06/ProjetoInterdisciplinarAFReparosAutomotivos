@@ -13,14 +13,12 @@ public class HomeController : Controller
     private readonly IClienteRepository _clienteRepository;
     private readonly IItemRepository _itemRepository;
     private readonly IVeiculoRepository _veiculoRepository;
-    private readonly IPecaRepository _pecaRepository;
 
     public HomeController(
         IOrcamentoRepository orcamentoRepository,
         IClienteRepository clienteRepository,
         IItemRepository itemRepository,
-        IVeiculoRepository veiculoRepository,
-        IPecaRepository pecaRepository)
+        IVeiculoRepository veiculoRepository)
     {
         QuestPDF.Settings.License = LicenseType.Community;
 
@@ -28,7 +26,6 @@ public class HomeController : Controller
         _clienteRepository = clienteRepository;
         _itemRepository = itemRepository;
         _veiculoRepository = veiculoRepository;
-        _pecaRepository = pecaRepository;
     }
 
     public IActionResult Index()
@@ -98,21 +95,26 @@ public class HomeController : Controller
 
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> ClienteOrcamentoStatus(int id, string chave, string decisao)
+    public async Task<IActionResult> ClienteOrcamentoStatus(int id, string chave, string decisao, string? formaPagamento, int? parcelas)
     {
         var status = string.Equals(decisao, "aprovar", StringComparison.OrdinalIgnoreCase) ? 2 : 3;
-        var itens = status == 3
-            ? (await _itemRepository.GetByOrcamento(id)).Where(item => item.pecaId.HasValue).ToList()
-            : new List<Item>();
-        var atualizado = await _orcamentoRepository.UpdateStatusByChaveCliente(id, chave, status);
 
-        if (atualizado && status == 3)
+        if (status == 2 && (string.IsNullOrWhiteSpace(formaPagamento) || parcelas is null or < 1 or > 12))
         {
-            foreach (var item in itens)
+            var orcamento = await ObterOrcamentoDoCliente(id, chave);
+            if (orcamento == null)
             {
-                await _pecaRepository.ReporEstoque(item.pecaId!.Value, item.qtdPeca);
+                return NotFound();
             }
+
+            orcamento.formaPagamento = formaPagamento ?? string.Empty;
+            orcamento.parcelas = parcelas.GetValueOrDefault();
+            ViewBag.ChaveAcesso = chave;
+            ModelState.AddModelError(string.Empty, "Escolha a forma de pagamento e as parcelas para aprovar o orcamento.");
+            return View("~/Views/ClienteOrcamento/Details.cshtml", orcamento);
         }
+
+        var atualizado = await _orcamentoRepository.UpdateStatusByChaveCliente(id, chave, status, formaPagamento, parcelas);
 
         var model = new ClienteOrcamentosViewModel
         {

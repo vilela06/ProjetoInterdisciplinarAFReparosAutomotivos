@@ -88,20 +88,10 @@ GO
 CREATE TABLE Peca
 (
 	idPeca			INT				NOT NULL	PRIMARY KEY	IDENTITY,
+	funcionarioId	INT				NOT NULL	REFERENCES	Funcionario(idFuncionario)	DEFAULT 1,
 	nome			VARCHAR(20)		NOT NULL,
 	valor			MONEY			NOT NULL	CHECK		(valor >= 0),
 	qtdEsto			INT				NOT NULL	CHECK		(qtdEsto >= 0)
-)
-GO
-
-CREATE TABLE Compra
-(
-	idCompra		INT				NOT NULL	PRIMARY KEY	IDENTITY,
-	funcionarioId	INT				NOT NULL	REFERENCES	Funcionario(idFuncionario),
-	pecaId			INT				NOT NULL	REFERENCES	Peca(idPeca),
-	qtd				INT				NOT NULL	CHECK		(qtd >= 0),
-	preco			MONEY			NOT NULL	CHECK		(preco >= 0),
-	dataComp		DATETIME		NOT NULL
 )
 GO
 
@@ -137,10 +127,11 @@ CREATE TABLE Itens
 	servicoId		INT				NOT NULL	REFERENCES Servico(idServico),
 	funcionarioID	INT				NOT NULL	REFERENCES Funcionario(idFuncionario),
 	pecaId			INT				NULL		REFERENCES Peca(idPeca),
-	qtd				INT				NOT NULL	DEFAULT		1		CHECK		(qtd >= 0),
+	qtd				INT				NOT NULL	DEFAULT		1		CHECK		(qtd >= 1),
+	qtdPeca			INT				NULL					CHECK		(qtdPeca IS NULL OR qtdPeca >= 0),
 	preco			MONEY			NOT NULL	CHECK		(preco >= 0),
-	desconto		DECIMAL			NULL,
-	taxa			DECIMAL			NULL,
+	desconto		DECIMAL(10,2)	NULL,
+	taxa			DECIMAL(10,2)	NULL,
 	dataEntrega		DATETIME		NULL,
 	PRIMARY KEY(orcamentoId,servicoId)
 )

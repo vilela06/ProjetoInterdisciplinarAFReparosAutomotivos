@@ -4,7 +4,7 @@ GO
 -- 20 Pessoas
 INSERT INTO Pessoa (nome, celular, documento, tipo_doc)
 VALUES
-('AF Reparos Automotivos', '(19) 98765-4321', '12.345.678/0001-10', 'J'),
+('AF Reparos Automotivos', '(17) 99650-8944', '12.345.678/0001-10', 'J'),
 ('Mariana Lopes Almeida', '(19) 97654-3210', '234.567.890-12', 'F'),
 ('João Pedro Martins', '(19) 98888-7777', '345.678.901-23', 'F'),
 ('Ana Clara Ribeiro', '(19) 97777-6666', '456.789.012-34', 'F'),
@@ -104,6 +104,16 @@ VALUES
 (18, 'Renault', 'BCD7890', 'Sandero', 'Prata', 2020);
 GO
 
+
+-- Pecas cadastradas por funcionarios
+INSERT INTO Peca (funcionarioId, nome, valor, qtdEsto)
+VALUES
+(1, 'Lampada', 30.00, 34),
+(1, 'Parabrisa', 20.00, 40),
+(2, 'Tinta cinza', 50.00, 40),
+(3, 'Kit velas Gol', 30.00, 9),
+(4, 'Farol dianteiro', 260.00, 12)
+GO
 
 -- Orçamentos
 INSERT INTO Orcamento(clienteId, funcionarioId, veiculoId, data_criacao, data_entrega, statusOrc, total, forma_pgto, parcelas)

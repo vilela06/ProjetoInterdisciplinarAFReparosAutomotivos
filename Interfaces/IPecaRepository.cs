@@ -9,8 +9,6 @@ namespace AfReparosAutomotivos.Interfaces
         Task<IEnumerable<Pecas>> GetAll();
         Task<IEnumerable<Pecas>> Search(string termo);
         Task<Pecas?> GetId(int id);
-        Task<bool> BaixarEstoque(int id, int quantidade);
-        Task ReporEstoque(int id, int quantidade);
         Task Update(Pecas peca);
     }
 }
